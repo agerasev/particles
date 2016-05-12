@@ -1,0 +1,6 @@
+[submodule "libgl4u"]
+	path = libgl4u
+	url = https://github.com/nthend/libgl4u.git
+[submodule "libla"]
+	path = libla
+	url = https://github.com/nthend/libla.git

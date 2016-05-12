@@ -1,0 +1,9 @@
+build
+*.creator*
+*.config
+*.includes
+
+.fuse*
+
+*.exe
+*.dll
