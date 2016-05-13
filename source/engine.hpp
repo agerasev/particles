@@ -10,8 +10,6 @@ private:
 	int width, height;
 	SDL_Window *window;
 	SDL_GLContext context;
-	
-public:
 	Graphics *gfx = nullptr;
 
 public:
@@ -92,5 +90,10 @@ public:
 			}
 			SDL_GL_SwapWindow(window);
 		}
+	}
+	
+	void setGraphics(Graphics *gfx) {
+		this->gfx = gfx;
+		gfx->resize(width, height);
 	}
 };

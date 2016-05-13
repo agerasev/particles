@@ -23,5 +23,8 @@ scripts/init.sh
 scripts/make.bat
 source/engine.hpp
 source/graphics.hpp
-shaders/shader.frag
-shaders/shader.vert
+shaders/draw.frag
+shaders/draw.vert
+source/scene.hpp
+shaders/fill.vert
+shaders/solve.frag
