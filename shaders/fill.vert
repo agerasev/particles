@@ -1,4 +1,4 @@
-#version 130
+#include <head.glsl>
 
 void main(void) {
 	vec2 pos = vec2(0.0, 0.0);

@@ -49,7 +49,8 @@ public:
 			if(shader == nullptr) {
 				continue;
 			}
-			shader->loadSourceFromFile("shaders/" + name);
+			shader->setName(name);
+			shader->loadSourceFromFile(name, "shaders");
 			shader->compile();
 			shaders.insert(std::pair<std::string, gl::Shader*>(name, shader));
 		}

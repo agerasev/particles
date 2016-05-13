@@ -13,6 +13,7 @@ libgl4u/sources/program.cpp
 libgl4u/sources/shader.cpp
 libgl4u/sources/texture.cpp
 libgl4u/sources/vertexbuffer.cpp
+libgl4u/CMakeLists.txt
 libla/la/mat.hpp
 libla/la/vec.hpp
 source/main.cpp
@@ -28,3 +29,9 @@ shaders/draw.vert
 source/scene.hpp
 shaders/fill.vert
 shaders/solve.frag
+libgl4u/c-includer/includer.hpp
+shaders/property.glsl
+libgl4u/c-includer/defs/opencl.h
+libgl4u/c-includer/defs/defs.glsl
+shaders/defs.glsl
+shaders/head.glsl
