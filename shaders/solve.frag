@@ -29,12 +29,15 @@ void main(void) {
 			if(i == id) {
 				continue;
 			}
-			vec3 rpos = pos(dp, id) - pos(dp, i);
-			float rads = rad(sp, id) + rad(sp, i);
-			float dist = length(rpos);
-			if(dist < rads) {
-				coll += 1e3*im*(rads - dist)*rpos/dist;
-			} 
+			vec3 r = pos(dp, id) - pos(dp, i);
+			float rm = (rad(sp, id) + rad(sp, i));
+			float l2 = dot(r,r)/(rm*rm);
+			float l4 = l2*l2;
+			float l6 = l2*l4;
+			float l8 = l4*l4;
+			vec3 v = vel(dp, id) - vel(dp, i);
+			vec3 f = 1e-1*(r/rm)*(1.0/l6 - 1.0)/l8;
+			coll += im*f*(1.0 - 1e-1*dot(f, v));
 		}
 		res = vel(dp, id) + u_dt*(osc + coll);
 	}

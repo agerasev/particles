@@ -23,8 +23,8 @@ private:
 	
 public:
 	Graphics() : scene(512) {
-		// glEnable(GL_DEPTH_TEST);
-		// glDepthFunc(GL_LEQUAL);
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LEQUAL);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		glClearColor(0.0f,0.0f,0.0f,1.0f);

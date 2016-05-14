@@ -68,7 +68,7 @@ public:
 							buf[4*(j*sarr[0] + i) + 3] = 1.0f;
 						} else if(j == 1) {
 							// velocity
-							float vc = 0.1f;
+							float vc = 0.2f;
 							buf[4*(j*sarr[0] + i) + 0] = vc*(random() - 0.5);
 							buf[4*(j*sarr[0] + i) + 1] = vc*(random() - 0.5);
 							buf[4*(j*sarr[0] + i) + 2] = 0.0f;

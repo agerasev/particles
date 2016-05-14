@@ -17,7 +17,7 @@ void main() {
 	int vc = gl_VertexID%4;
 	
 	float rad = rad(sp, id);
-	vec2 pos = pos(dp, id).xy;
+	vec3 pos = pos(dp, id);
 	
 	vec2 dir = vec2(0.0, 0.0);
 	if(vc == 0 || vc == 1) {
@@ -34,5 +34,5 @@ void main() {
 	vf_id = id;
 	vf_coord = dir;
 	vf_shadow = 1.0 - 0.5*float(vc/2);
-	gl_Position = vec4(pos + rad*dir, 0.0, 1.0);
+	gl_Position = vec4(pos + vec3(rad*dir, 0), 1);
 }
