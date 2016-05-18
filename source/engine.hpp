@@ -11,6 +11,8 @@ private:
 	SDL_Window *window;
 	SDL_GLContext context;
 	Graphics *gfx = nullptr;
+	
+	bool hold = false;
 
 public:
 	Engine(int w, int h) {
@@ -66,10 +68,6 @@ public:
 		while(SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
 				return false;
-			} else if(event.type == SDL_KEYDOWN) {
-				if(event.key.keysym.sym == SDLK_ESCAPE) {
-					return false;
-				}
 			} else if(event.type == SDL_WINDOWEVENT) {
 				if(event.window.event == SDL_WINDOWEVENT_RESIZED) {
 					width = event.window.data1; 
@@ -78,6 +76,18 @@ public:
 						gfx->resize(width, height);
 					}
 				}
+			} else if(event.type == SDL_MOUSEMOTION) {
+				if(hold)
+					gfx->spin(event.motion.xrel, event.motion.yrel);
+			} else if(event.type == SDL_MOUSEBUTTONDOWN) {
+				if(event.button.button == SDL_BUTTON_LEFT)
+					hold = true;
+			} else if(event.type == SDL_MOUSEBUTTONUP) {
+				if(event.button.button == SDL_BUTTON_LEFT)
+					hold = false;
+			} else if(event.type == SDL_MOUSEWHEEL) {
+				if(event.wheel.y)
+					gfx->zoom(event.wheel.y);
 			}
 		}
 		return true;
@@ -85,9 +95,7 @@ public:
 	
 	void loop() {
 		while(handle()) {
-			if(gfx != nullptr) {
-				gfx->render();
-			}
+			gfx->render();
 			SDL_GL_SwapWindow(window);
 		}
 	}

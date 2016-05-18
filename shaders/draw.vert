@@ -2,6 +2,9 @@
 
 #include "property.glsl"
 
+uniform mat4 u_view;
+uniform mat4 u_proj;
+
 uniform sampler2D u_sprop;
 uniform sampler2D u_dprop;
 
@@ -17,7 +20,7 @@ void main() {
 	int vc = gl_VertexID%4;
 	
 	float rad = rad(sp, id);
-	vec3 pos = pos(dp, id);
+	vec4 pos = vec4(pos(dp, id), 1);
 	
 	vec2 dir = vec2(0.0, 0.0);
 	if(vc == 0 || vc == 1) {
@@ -33,6 +36,6 @@ void main() {
 	
 	vf_id = id;
 	vf_coord = dir;
-	vf_shadow = 1.0 - 0.5*float(vc/2);
-	gl_Position = vec4(pos + vec3(rad*dir, 0), 1);
+	vf_shadow = 1.0 - 0.2*float(vc/2);
+	gl_Position = u_proj*(u_view*pos + vec4(rad*dir, 0, 0));
 }
