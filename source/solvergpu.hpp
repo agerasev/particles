@@ -4,7 +4,6 @@
 
 #include <cmath>
 
-#include <random>
 #include <map>
 #include <string>
 
@@ -12,86 +11,27 @@
 #include "gl/texture.hpp"
 #include "gl/framebuffer.hpp"
 
+#include <la/vec.hpp>
+
+#include "glbank.hpp"
 
 class SolverGPU : public Solver {
 public:
-	static const int NSTAGES = 2;
-	gl::FrameBuffer *dprops[NSTAGES];
+	static const int stages = 2;
+	gl::FrameBuffer *dprops[stages];
+	const int sph = 2, dph = 2;
 	
-	std::map<std::string, gl::Program*> &progs;
-	
-	std::minstd_rand rand_engine;
-	std::uniform_real_distribution<> rand_dist;
-	
-	float random() {
-		return float(rand_dist(rand_engine));
-	}
+	GLBank *bank;
 	
 public:
-	SolverGPU(int size, std::map<std::string, gl::Program*> &progs)
-	: Solver(size), progs(progs), rand_dist(0.0, 1.0) {
-		int sarr[] = {size, 0};
-		int zoarr[] = {0, 0};
-		float *buf;
-		
-		int side = ceil(pow(double(size), 1.0/3.0));
-		
+	SolverGPU(int size, GLBank *bank)
+	: Solver(size), bank(bank) {
 		sprop = new gl::Texture();
-		sarr[1] = 2;
-		sprop->init(2, sarr, gl::Texture::RGBA8);
-		buf = new float[4*sarr[0]*sarr[1]];
-		for(int j = 0; j < sarr[1]; ++j) {
-			for(int i = 0; i < sarr[0]; ++i) {
-				float x = float(i%side)/(side - 1) - 0.5;
-				float y = float((i/side)%side)/(side - 1) - 0.5;
-				float z = float(i/(side*side))/(side - 1) - 0.5f;
-				if(j == 0) {
-					buf[4*(j*sarr[0] + i) + 0] = 1e-2; // radius
-					buf[4*(j*sarr[0] + i) + 1] = 0.0f;
-					buf[4*(j*sarr[0] + i) + 2] = 0.0f;
-					buf[4*(j*sarr[0] + i) + 3] = 1.0f; // inverse mass
-				} else if(j == 1) {
-					// color
-					buf[4*(j*sarr[0] + i) + 0] = x + 0.5;
-					buf[4*(j*sarr[0] + i) + 1] = y + 0.5;
-					buf[4*(j*sarr[0] + i) + 2] = z + 0.5;
-					buf[4*(j*sarr[0] + i) + 3] = 1.0f;
-				}
-			}
-		}
-		sprop->write(buf, zoarr, sarr, gl::Texture::RGBA, gl::FLOAT);
-		delete[] buf;
+		sprop->init(2, ivec2(size, sph).data(), gl::Texture::RGBA8);
 		
-		sarr[1] = 2;
-		for(int k = 0; k < NSTAGES; ++k) {
+		for(int k = 0; k < stages; ++k) {
 			gl::FrameBuffer *fb = new gl::FrameBuffer();
-			fb->init(gl::Texture::RGBA32F, sarr[0], sarr[1]);
-			if(k == 0) {
-				float *buf = new float[4*sarr[0]*sarr[1]];
-				for(int j = 0; j < sarr[1]; ++j) {
-					for(int i = 0; i < sarr[0]; ++i) {
-						float x = float(i%side)/(side - 1) - 0.5;
-						float y = float((i/side)%side)/(side - 1) - 0.5;
-						float z = float(i/(side*side))/(side - 1) - 0.5f;
-						if(j == 0) {
-							//position
-							buf[4*(j*sarr[0] + i) + 0] = x;
-							buf[4*(j*sarr[0] + i) + 1] = y;
-							buf[4*(j*sarr[0] + i) + 2] = z;
-							buf[4*(j*sarr[0] + i) + 3] = 1.0f;
-						} else if(j == 1) {
-							// velocity
-							float tv = 0.1f, v = 0.2f;
-							buf[4*(j*sarr[0] + i) + 0] = tv*(random() - 0.5) - v*y;
-							buf[4*(j*sarr[0] + i) + 1] = tv*(random() - 0.5) + v*x;
-							buf[4*(j*sarr[0] + i) + 2] = 0.0f;
-							buf[4*(j*sarr[0] + i) + 3] = 1.0f;
-						}
-					}
-				}
-				fb->getTexture()->write(buf, zoarr, sarr, gl::Texture::RGBA, gl::FLOAT);
-				delete[] buf;
-			}
+			fb->init(gl::Texture::RGBA32F, size, dph);
 			dprops[k] = fb;
 		}
 		
@@ -100,7 +40,7 @@ public:
 	
 	virtual ~SolverGPU() {
 		dprop = nullptr;
-		for(int k = 0; k < NSTAGES; ++k) {
+		for(int k = 0; k < stages; ++k) {
 			delete dprops[k];
 		}
 		
@@ -108,9 +48,61 @@ public:
 	}
 	
 	virtual void load(Particle parts[]) {
-		for(int i = 0; i < size; ++i) {
-			
+		int sarr[] = {size, 0};
+		int zoarr[] = {0, 0};
+		float *buf;
+		
+		sarr[1] = sph;
+		buf = new float[4*sarr[0]*sarr[1]];
+		for(int j = 0; j < sarr[1]; ++j) {
+			for(int i = 0; i < sarr[0]; ++i) {
+				Particle &p = parts[i];
+				if(j == 0) {
+					buf[4*(j*sarr[0] + i) + 0] = p.rad;
+					buf[4*(j*sarr[0] + i) + 1] = 0.0f;
+					buf[4*(j*sarr[0] + i) + 2] = 0.0f;
+					buf[4*(j*sarr[0] + i) + 3] = p.mass;
+				} else if(j == 1) {
+					// color
+					buf[4*(j*sarr[0] + i) + 0] = p.color.x();
+					buf[4*(j*sarr[0] + i) + 1] = p.color.y();
+					buf[4*(j*sarr[0] + i) + 2] = p.color.z();
+					buf[4*(j*sarr[0] + i) + 3] = 1.0f;
+				}
+			}
 		}
+		sprop->write(buf, zoarr, sarr, gl::Texture::RGBA, gl::FLOAT);
+		delete[] buf;
+		
+		sarr[1] = dph;
+		for(int k = 0; k < stages; ++k) {
+			gl::FrameBuffer *fb = dprops[k];
+			if(k == 0) {
+				float *buf = new float[4*sarr[0]*sarr[1]];
+				for(int j = 0; j < sarr[1]; ++j) {
+					for(int i = 0; i < sarr[0]; ++i) {
+						Particle &p = parts[i];
+						if(j == 0) {
+							//position
+							buf[4*(j*sarr[0] + i) + 0] = p.pos.x();
+							buf[4*(j*sarr[0] + i) + 1] = p.pos.y();
+							buf[4*(j*sarr[0] + i) + 2] = p.pos.z();
+							buf[4*(j*sarr[0] + i) + 3] = 1.0f;
+						} else if(j == 1) {
+							// velocity
+							buf[4*(j*sarr[0] + i) + 0] = p.vel.x();
+							buf[4*(j*sarr[0] + i) + 1] = p.vel.y();
+							buf[4*(j*sarr[0] + i) + 2] = p.vel.z();
+							buf[4*(j*sarr[0] + i) + 3] = 1.0f;
+						}
+					}
+				}
+				fb->getTexture()->write(buf, zoarr, sarr, gl::Texture::RGBA, gl::FLOAT);
+				delete[] buf;
+			}
+		}
+		
+		dprop = dprops[0]->getTexture();
 	}
 	
 	virtual void solve(float dt, int steps = 1) override {
@@ -120,7 +112,7 @@ public:
 		for(int i = 0; i < steps; ++i) {
 			fb = dprops[1];
 			fb->bind();
-			prog = progs["solve"];
+			prog = bank->progs["solve"];
 			prog->setUniform("u_sprop", sprop);
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			prog->setUniform("u_dt", dt/steps);

@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 
+#include "solver.hpp"
 #include "graphics.hpp"
 
 class Engine {
@@ -10,7 +11,9 @@ private:
 	int width, height;
 	SDL_Window *window;
 	SDL_GLContext context;
+	
 	Graphics *gfx = nullptr;
+	Solver *solver = nullptr;
 	
 	bool hold = false;
 
@@ -95,6 +98,7 @@ public:
 	
 	void loop() {
 		while(handle()) {
+			solver->solve();
 			gfx->render();
 			SDL_GL_SwapWindow(window);
 		}
@@ -103,5 +107,9 @@ public:
 	void setGraphics(Graphics *gfx) {
 		this->gfx = gfx;
 		gfx->resize(width, height);
+	}
+	
+	void setSolver(Solver *solver) {
+		this->solver = solver;
 	}
 };

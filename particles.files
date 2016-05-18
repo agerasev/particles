@@ -38,3 +38,4 @@ shaders/head.glsl
 source/solvercpu.hpp
 source/solvergpu.hpp
 source/particle.hpp
+source/glbank.hpp

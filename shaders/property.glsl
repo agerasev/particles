@@ -5,7 +5,7 @@ float rad(sampler2D sp, int id) {
 	return texelFetch(sp, ivec2(id, 0), 0).r;
 }
 
-float imass(sampler2D sp, int id) {
+float mass(sampler2D sp, int id) {
 	return texelFetch(sp, ivec2(id, 0), 0).w;
 }
 

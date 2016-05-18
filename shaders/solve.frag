@@ -21,25 +21,19 @@ void main(void) {
 		res = pos(dp, id) + u_dt*vel(dp, id);
 	} else if (var == 1) {
 		// velocity
-		float im = imass(sp, id);
-		vec3 osc = -im*pos(dp, id);
-		vec3 coll = vec3(0.0, 0.0, 0.0);
+		vec3 acc = vec3(0.0, 0.0, 0.0);
 		int i;
 		for(i = 0; i < u_count; ++i) {
 			if(i == id) {
 				continue;
 			}
+			float m = mass(sp, id);
 			vec3 r = pos(dp, id) - pos(dp, i);
-			float rm = (2*4e-2);
-			float l2 = dot(r,r)/(rm*rm);
-			float l4 = l2*l2;
-			float l6 = l2*l4;
-			float l8 = l4*l4;
-			vec3 v = vel(dp, id) - vel(dp, i);
-			vec3 f = 1e-1*(r/rm)*(1.0/l6 - 1.0)/l8;
-			coll += im*f*(1.0 - 4e-1*dot(f, v));
+			float eps = rad(sp, id) + rad(sp, i);
+			float l = sqrt(dot(r,r) + eps*eps);
+			acc -= 1e-4*m*r/(l*l*l);
 		}
-		res = vel(dp, id) + u_dt*(osc + coll);
+		res = vel(dp, id) + u_dt*acc;
 	}
 	f_FragColor = vec4(res, 1.0);
 }
