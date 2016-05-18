@@ -11,7 +11,7 @@
 #include "gl/shader.hpp"
 #include "gl/program.hpp"
 
-#include "solver.hpp"
+#include "solvergpu.hpp"
 
 #include <la/vec.hpp>
 #include <la/mat.hpp>
@@ -83,7 +83,7 @@ public:
 
 class Graphics {
 private:
-	Scene scene;
+	Solver *solver;
 	
 	std::map<std::string, gl::Shader*> shaders;
 	std::map<std::string, gl::Program*> progs;
@@ -93,7 +93,7 @@ private:
 	int width = 0, height = 0;
 	
 public:
-	Graphics() : scene(512) {
+	Graphics() {
 		view.update();
 		
 		glEnable(GL_DEPTH_TEST);
@@ -143,12 +143,17 @@ public:
 			prog->link();
 			progs.insert(std::pair<std::string, gl::Program*>(name, prog));
 		}
+		
+		solver = new SolverGPU(512, progs);
 	}
 	
 	~Graphics() {
+		delete solver;
+		
 		for(auto p : progs) {
 			delete p.second;
 		}
+		
 		for(auto p : shaders) {
 			delete p.second;
 		}
@@ -171,33 +176,18 @@ public:
 	}
 	
 	void render() {
-		gl::FrameBuffer *fb = nullptr;
+		solver->solve(1e-2, 16);
+		
 		gl::Program *prog = nullptr;
-		
-		const int FREQ = 16;
-		for(int i = 0; i < FREQ; ++i) {
-			fb = scene.dprops[1];
-			fb->bind();
-			prog = progs["solve"];
-			prog->setUniform("u_sprop", scene.sprop);
-			prog->setUniform("u_dprop", scene.dprops[0]->getTexture());
-			prog->setUniform("u_dt", 1e-2f/FREQ);
-			prog->setUniform("u_count", scene.size);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			scene.dprops[1] = scene.dprops[0];
-			scene.dprops[0] = fb;
-		}
-		
 		gl::FrameBuffer::unbind();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		prog = progs["draw"];
 		prog->setUniform("u_proj", proj.mat.data(), 16);
 		prog->setUniform("u_view", view.mat.data(), 16);
-		prog->setUniform("u_sprop", scene.sprop);
-		prog->setUniform("u_dprop", scene.dprops[0]->getTexture());
-		prog->evaluate(GL_QUADS, 0, 4*scene.size);
+		prog->setUniform("u_sprop", solver->sprop);
+		prog->setUniform("u_dprop", solver->dprop);
+		prog->evaluate(GL_QUADS, 0, 4*solver->size);
 		
 		glFlush();
 		glFinish();
