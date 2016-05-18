@@ -27,7 +27,7 @@ void main(void) {
 			if(i == id) {
 				continue;
 			}
-			float m = mass(sp, id);
+			float m = mass(sp, i);
 			vec3 r = pos(dp, id) - pos(dp, i);
 			float eps = rad(sp, id) + rad(sp, i);
 			float l = sqrt(dot(r,r) + eps*eps);

@@ -17,12 +17,13 @@
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 1024;
+	const int size = 1024*4;
 	
 	GLBank bank;
+	//SolverCPU solver(size);
 	SolverGPU solver(size, &bank);
 	solver.dt = 1e-2;
-	solver.steps = 4;
+	solver.steps = 1;
 	
 	Graphics gfx(&bank, &solver);
 	
