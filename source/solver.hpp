@@ -26,48 +26,42 @@ public:
 	void loadTex(T parts[]) {
 		float *buf = buffer;
 		
-		for(int j = 0; j < sph; ++j) {
-			for(int i = 0; i < size; ++i) {
-				T &p = parts[i];
-				if(j == 0) {
-					buf[4*(j*size + i) + 0] = p.rad;
-					buf[4*(j*size + i) + 1] = 0.0f;
-					buf[4*(j*size + i) + 2] = 0.0f;
-					buf[4*(j*size + i) + 3] = p.mass;
-				} else if(j == 1) {
-					// color
-					buf[4*(j*size + i) + 0] = p.color.x();
-					buf[4*(j*size + i) + 1] = p.color.y();
-					buf[4*(j*size + i) + 2] = p.color.z();
-					buf[4*(j*size + i) + 3] = 1.0f;
-				}
-			}
+		for(int i = 0; i < size; ++i) {
+			T &p = parts[i];
+	
+			buf[4*(i*sph + 0) + 0] = p.rad;
+			buf[4*(i*sph + 0) + 1] = 0.0f;
+			buf[4*(i*sph + 0) + 2] = 0.0f;
+			buf[4*(i*sph + 0) + 3] = p.mass;
+		
+			// color
+			buf[4*(i*sph + 1) + 0] = p.color.x();
+			buf[4*(i*sph + 1) + 1] = p.color.y();
+			buf[4*(i*sph + 1) + 2] = p.color.z();
+			buf[4*(i*sph + 1) + 3] = 1.0f;
 		}
 		sprop->write(
-			buf, nullivec2.data(), ivec2(size, sph).data(), 
+			buf, nullivec2.data(), ivec2(size*sph, 1).data(), 
 			gl::Texture::RGBA, gl::FLOAT
 		);
 		
-		for(int j = 0; j < dph; ++j) {
-			for(int i = 0; i < size; ++i) {
-				T &p = parts[i];
-				if(j == 0) {
-					//position
-					buf[4*(j*size + i) + 0] = p.pos.x();
-					buf[4*(j*size + i) + 1] = p.pos.y();
-					buf[4*(j*size + i) + 2] = p.pos.z();
-					buf[4*(j*size + i) + 3] = 1.0f;
-				} else if(j == 1) {
-					// velocity
-					buf[4*(j*size + i) + 0] = p.vel.x();
-					buf[4*(j*size + i) + 1] = p.vel.y();
-					buf[4*(j*size + i) + 2] = p.vel.z();
-					buf[4*(j*size + i) + 3] = 1.0f;
-				}
-			}
+		for(int i = 0; i < size; ++i) {
+			T &p = parts[i];
+
+			//position
+			buf[4*(i*dph + 0) + 0] = p.pos.x();
+			buf[4*(i*dph + 0) + 1] = p.pos.y();
+			buf[4*(i*dph + 0) + 2] = p.pos.z();
+			buf[4*(i*dph + 0) + 3] = 1.0f;
+
+			// velocity
+			buf[4*(i*dph + 1) + 0] = p.vel.x();
+			buf[4*(i*dph + 1) + 1] = p.vel.y();
+			buf[4*(i*dph + 1) + 2] = p.vel.z();
+			buf[4*(i*dph + 1) + 3] = 1.0f;
 		}
 		dprop->write(
-			buf, nullivec2.data(), ivec2(size, sph).data(), 
+			buf, nullivec2.data(), ivec2(size*dph, 1).data(), 
 			gl::Texture::RGBA, gl::FLOAT
 		);
 	}

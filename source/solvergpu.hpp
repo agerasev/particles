@@ -26,11 +26,11 @@ public:
 	SolverGPU(int size, GLBank *bank)
 	: Solver(size), bank(bank) {
 		sprop = new gl::Texture();
-		sprop->init(2, ivec2(size, sph).data(), gl::Texture::RGBA32F);
+		sprop->init(2, ivec2(size*sph, 1).data(), gl::Texture::RGBA32F);
 		
 		for(int k = 0; k < stages; ++k) {
 			gl::FrameBuffer *fb = new gl::FrameBuffer();
-			fb->init(gl::Texture::RGBA32F, size, dph);
+			fb->init(gl::Texture::RGBA32F, size*dph, 1);
 			dprops[k] = fb;
 		}
 		

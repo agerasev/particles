@@ -13,13 +13,13 @@ uniform int u_count;
 out vec4 f_FragColor;
 
 void main(void) {
-	int id = int(gl_FragCoord.x);
-	int var = int(gl_FragCoord.y);
+	int id = int(gl_FragCoord.x)/2;
+	int var = int(gl_FragCoord.x)%2;
 	vec3 res = vec3(0.0, 0.0, 0.0);
 	if(var == 0) {
 		// position
 		res = pos(dp, id) + u_dt*vel(dp, id);
-	} else if (var == 1) {
+	} else if(var == 1) {
 		// velocity
 		vec3 acc = vec3(0.0, 0.0, 0.0);
 		int i;

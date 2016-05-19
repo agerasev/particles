@@ -17,10 +17,10 @@
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 1024*4;
+	const int size = 1024;
 	
 	GLBank bank;
-	//SolverCPU solver(size);
+	// SolverCPU solver(size);
 	SolverGPU solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 			float l = sqrt(x*x + y*y + z*z + 1e-2);
 			
 			p.mass = 1e3/size;
-			p.rad = 1e-2;
+			p.rad = 6e-3;
 			
 			p.pos = fvec3(x, y, 0.0);
 			p.vel = 
