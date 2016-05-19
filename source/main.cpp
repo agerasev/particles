@@ -19,12 +19,12 @@
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 64*1024;
+	const int size = 1024;
 	
 	GLBank bank;
-	//SolverCPU solver(size);
+	SolverCPU solver(size);
 	//SolverGPU solver(size, &bank);
-	SolverHybrid solver(size, &bank);
+	//SolverHybrid solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	
@@ -42,21 +42,27 @@ int main(int argc, char *argv[]) {
 			return rand_dist(rand_engine);
 		};
 		
-		int side = ceil(pow(double(size), 1.0/2.0));
+		float side = 2.0*pow(double(size), 1.0/2.0);
+		float nr = side/sqrt(2*M_PI);
+		float na = side*sqrt(2*M_PI);
+		
+		int ca = 0, cr = 1;
 		for(int i = 0; i < size; ++i) {
 			Particle p;
-			float x = float(i%side)/(side - 1) - 0.5;
-			float y = float(i/side)/(side - 1) - 0.5;
+			
+			float a = 2*M_PI*ca/(na*cr/nr);
+			float x = cr/nr*cos(a);
+			float y = cr/nr*sin(a);
 			float z = 0.0;
 			float l = sqrt(x*x + y*y + z*z + 1e-2);
 			
 			p.mass = 1e3/size;
-			p.rad = 2e-3;
+			p.rad = 6e-3;
 			
-			p.pos = fvec3(x, y, 0.0);
+			p.pos = fvec3(x, y, z);
 			p.vel = 
 				0.1*fvec3(rand(), rand(), rand()) + 
-				1.0f*fvec3(-y, x, 0.0)*sqrt(l);
+				0.5f*fvec3(-y, x, 0.0)*sqrt(l);
 			
 			p.color = fvec3(
 				x + 0.5, 
@@ -65,6 +71,12 @@ int main(int argc, char *argv[]) {
 			);
 			
 			parts[i] = p;
+			
+			ca += 1;
+			if(ca > na*cr/nr) {
+				cr += 1;
+				ca = 0;
+			}
 		}
 		solver.load(parts.data());
 	}

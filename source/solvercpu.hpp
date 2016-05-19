@@ -19,13 +19,18 @@ private:
 			color = p.color;
 			mass = p.mass;
 			rad = p.rad;
+			
 			pos = p.pos;
 			vel = p.vel;
+			cpos = p.pos;
+			cvel = p.vel;
 		}
 	
 	public:
-		static const int bufs = 1;
-		fvec3 bpos[bufs], bvel[bufs];
+		fvec3 cpos, cvel;
+		static const int bufs = 4;
+		fvec3 dpos[bufs], dvel[bufs];
+		
 		PartBuf() = default;
 		PartBuf(const Particle &p) {
 			_copy(p);
@@ -35,6 +40,8 @@ private:
 			return *this;
 		}
 	};
+	
+	typedef Branch<const PartBuf*> PBranch;
 	
 	PartBuf *parts;
 	const float gth = 0.5;
@@ -96,36 +103,82 @@ public:
 		}
 	}
 	
+	PBranch *buildTree() {
+		PBranch *trunc = new PBranch(nullfvec3, 4.0, 16);
+		double begin = omp_get_wtime();
+		for(int i = 0; i < size; ++i) {
+			trunc->add(&parts[i]);
+		}
+		trunc->update();
+		t_tree += double(omp_get_wtime() - begin);
+		return trunc;
+	}
+	
 	virtual void solve(float dt, int steps = 1) override {
 		double begin;
+		PBranch *trunc;
 		
-		Branch<const PartBuf*> trunk(nullfvec3, 4.0, 16);
-		
-		begin = omp_get_wtime();
-		{
-			for(int i = 0; i < size; ++i) {
-				trunk.add(&parts[i]);
-			}
-			trunk.update();
+		#pragma omp parallel for
+		for(int i = 0; i < size; ++i) {
+			parts[i].cpos = parts[i].pos;
+			parts[i].cvel = parts[i].vel;
 		}
-		t_tree += double(omp_get_wtime() - begin);
-		n_tree += 1;
 		
+		// stage 1
+		trunc = buildTree();
 		begin = omp_get_wtime();
 		#pragma omp parallel for
 		for(int i = 0; i < size; ++i) {
-			parts[i].bpos[0] = parts[i].pos + dt*parts[i].vel;
-			parts[i].bvel[0] = parts[i].vel + dt*attract(&parts[i], &trunk);
+			parts[i].dpos[0] = parts[i].vel;
+			parts[i].dvel[0] = attract(&parts[i], trunc);
+			parts[i].pos = parts[i].cpos + 0.5*dt*parts[i].dpos[0];
+			parts[i].vel = parts[i].cvel + 0.5*dt*parts[i].dvel[0];
 		}
 		t_grav += double(omp_get_wtime() - begin);
-		n_grav += 1;
+		delete trunc;
 		
+		// stage 2
+		trunc = buildTree();
+		begin = omp_get_wtime();
 		#pragma omp parallel for
 		for(int i = 0; i < size; ++i) {
-			parts[i].pos = parts[i].bpos[0];
-			parts[i].vel = parts[i].bvel[0];
+			parts[i].dpos[1] = parts[i].vel;
+			parts[i].dvel[1] = attract(&parts[i], trunc);
+			parts[i].pos = parts[i].cpos + 0.5*dt*parts[i].dpos[1];
+			parts[i].vel = parts[i].cvel + 0.5*dt*parts[i].dvel[1];
 		}
+		t_grav += double(omp_get_wtime() - begin);
+		delete trunc;
+		
+		// stage 3
+		trunc = buildTree();
+		begin = omp_get_wtime();
+		#pragma omp parallel for
+		for(int i = 0; i < size; ++i) {
+			parts[i].dpos[2] = parts[i].vel;
+			parts[i].dvel[2] = attract(&parts[i], trunc);
+			parts[i].pos = parts[i].cpos + dt*parts[i].dpos[2];
+			parts[i].vel = parts[i].cvel + dt*parts[i].dvel[2];
+		}
+		t_grav += double(omp_get_wtime() - begin);
+		delete trunc;
+		
+		// stage 4
+		trunc = buildTree();
+		begin = omp_get_wtime();
+		#pragma omp parallel for
+		for(int i = 0; i < size; ++i) {
+			parts[i].dpos[3] = parts[i].vel;
+			parts[i].dvel[3] = attract(&parts[i], trunc);
+			parts[i].pos = parts[i].cpos + dt/6.0*(parts[i].dpos[0] + 2.0*parts[i].dpos[1] + 2.0*parts[i].dpos[2] + parts[i].dpos[3]);
+			parts[i].vel = parts[i].cvel + dt/6.0*(parts[i].dvel[0] + 2.0*parts[i].dvel[1] + 2.0*parts[i].dvel[2] + parts[i].dvel[3]);
+		}
+		t_grav += double(omp_get_wtime() - begin);
+		delete trunc;
 		
 		loadTex(parts);
+		
+		n_tree += 1;
+		n_grav += 1;
 	}
 };
