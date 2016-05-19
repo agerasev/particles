@@ -29,9 +29,10 @@ public:
 	}
 	
 	Solver(int size) : size(size) {
-		buffer = new float[4*size*ps];
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxts);
 		printf("GL_MAX_TEXTURE_SIZE: %d\n", maxts);
+		ivec2 texs = split_size(size*ps);
+		buffer = new float[4*texs[0]*texs[1]];
 	}
 	virtual ~Solver() {
 		delete[] buffer;

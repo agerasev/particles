@@ -8,20 +8,23 @@
 #include <la/vec.hpp>
 
 #include "glbank.hpp"
-#include "solvercpu.hpp"
-#include "solvergpu.hpp"
 #include "graphics.hpp"
 #include "engine.hpp"
 #include "particle.hpp"
 
+#include "solvercpu.hpp"
+#include "solvergpu.hpp"
+#include "solverhybrid.hpp"
+
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 4*1024;
+	const int size = 64*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);
-	SolverGPU solver(size, &bank);
+	//SolverGPU solver(size, &bank);
+	SolverHybrid solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	

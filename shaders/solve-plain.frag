@@ -27,9 +27,6 @@ void main(void) {
 			vec3 acc = vec3(0);
 			int i;
 			for(i = 0; i < u_count; ++i) {
-				if(i == id) {
-					continue;
-				}
 				float m = mass(sp, i);
 				vec3 r = pos(dp, id) - pos(dp, i);
 				float eps = rad(sp, id) + rad(sp, i);

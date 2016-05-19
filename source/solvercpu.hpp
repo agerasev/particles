@@ -74,8 +74,6 @@ public:
 	}
 	
 	fvec3 attract(PartBuf *p, const PartBuf *op) {
-		if(p == op)
-			return nullfvec3;
 		return accel(p->pos, op->pos, op->mass);
 	}
 	

@@ -41,4 +41,6 @@ source/particle.hpp
 source/glbank.hpp
 shaders/draw-point.vert
 shaders/draw-point.frag
+shaders/solve-tree.frag
+source/solverhybrid.hpp
 source/octree.hpp
