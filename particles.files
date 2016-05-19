@@ -28,7 +28,7 @@ shaders/draw-quad.frag
 shaders/draw-quad.vert
 source/solver.hpp
 shaders/fill.vert
-shaders/solve.frag
+shaders/solve-plain.frag
 libgl4u/c-includer/includer.hpp
 shaders/property.glsl
 libgl4u/c-includer/defs/opencl.h
@@ -41,3 +41,4 @@ source/particle.hpp
 source/glbank.hpp
 shaders/draw-point.vert
 shaders/draw-point.frag
+source/octree.hpp

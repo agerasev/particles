@@ -5,132 +5,37 @@
 
 #include <vector>
 
+#include <omp.h>
+
 #include "solver.hpp"
 #include "particle.hpp"
-
-class PartBuf : public Particle {
-private:
-	void _copy(const Particle &p) {
-		color = p.color;
-		mass = p.mass;
-		rad = p.rad;
-		pos = p.pos;
-		vel = p.vel;
-	}
-
-public:
-	static const int bufs = 1;
-	fvec3 bpos[bufs], bvel[bufs];
-	PartBuf() = default;
-	PartBuf(const Particle &p) {
-		_copy(p);
-	}
-	PartBuf &operator = (const Particle &p) {
-		_copy(p);
-		return *this;
-	}
-};
-
-class Branch {
-public:
-	fvec3 center;
-	float size;
-	
-	static const int max = 8;
-	bool leaf = true;
-	int depth;
-	
-	std::vector<const PartBuf*> buffer;
-	
-	Branch *next[8] = {nullptr};
-	
-	fvec3 barycenter;
-	float mass;
-	int count = 0;
-	
-	Branch(fvec3 center, float size, int depth) 
-	: center(center), size(size), depth(depth) {
-		buffer.reserve(max);
-	}
-	~Branch() {
-		if(!leaf) {
-			for(int i = 0; i < 8; ++i) {
-				delete next[i];
-			}
-		}
-	}
-	void init_next() {
-		leaf = false;
-		for(int i = 0; i < 8; ++i) {
-			fvec3 dir;
-			for(int j = 0; j < 3; ++j) {
-				dir[j] = ((i >> j) & 1) - 0.5;
-			}
-			next[i] = new Branch(
-				center + dir*size,
-				0.5*size, depth - 1
-			);
-		}
-	}
-	int get_next(fvec3 pos) const {
-		fvec3 dir = pos - center;
-		int i = 0;
-		for(int j = 0; j < 3; ++j) {
-			i += (1 << j)*(dir[j] >= 0);
-		}
-		return i;
-	}
-	void add_next(const PartBuf *p) {
-		next[get_next(p->pos)]->add(p);
-	}
-	void add_current(const PartBuf *p) {
-		if(int(buffer.size()) >= max && depth > 0) {
-			init_next();
-			add_next(p);
-			for(int i = 0; i < int(buffer.size()); ++i) {
-				add_next(buffer[i]);
-			}
-			buffer.clear();
-		} else {
-			buffer.push_back(p);
-		}
-	}
-	void add(const PartBuf *p) {
-		if(leaf) {
-			add_current(p);
-		} else {
-			add_next(p);
-		}
-	}
-	void update() {
-		barycenter = nullfvec3;
-		mass = 0.0f;
-		count = 0;
-		if(!leaf) {
-			for(int i = 0; i < 8; ++i) {
-				next[i]->update();
-				if(next[i]->count > 0) {
-					count += next[i]->count;
-					barycenter += next[i]->barycenter*next[i]->mass;
-					mass += next[i]->mass;
-				}
-			}
-			barycenter /= mass;
-		} else {
-			count = buffer.size();
-			if(count > 0) {
-				for(int i = 0; i < int(buffer.size()); ++i) {
-					barycenter += buffer[i]->pos*buffer[i]->mass;
-					mass += buffer[i]->mass;
-				}
-				barycenter /= mass;
-			}
-		}
-	}
-};
+#include "octree.hpp"
 
 class SolverCPU : public Solver {
 private:
+	class PartBuf : public Particle {
+	private:
+		void _copy(const Particle &p) {
+			color = p.color;
+			mass = p.mass;
+			rad = p.rad;
+			pos = p.pos;
+			vel = p.vel;
+		}
+	
+	public:
+		static const int bufs = 1;
+		fvec3 bpos[bufs], bvel[bufs];
+		PartBuf() = default;
+		PartBuf(const Particle &p) {
+			_copy(p);
+		}
+		PartBuf &operator = (const Particle &p) {
+			_copy(p);
+			return *this;
+		}
+	};
+	
 	PartBuf *parts;
 	const float gth = 0.5;
 	
@@ -151,8 +56,8 @@ public:
 		delete sprop;
 		delete[] parts;
 		
-		printf("tree: %fl s\n", t_tree/n_tree);
-		printf("grav: %fl s\n", t_grav/n_grav);
+		printf("tree: %lf s\n", t_tree/n_tree);
+		printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
 	virtual void load(Particle parts[]) {
@@ -174,7 +79,7 @@ public:
 		return accel(p->pos, op->pos, op->mass);
 	}
 	
-	fvec3 attract(PartBuf *p, const Branch *b) {
+	fvec3 attract(PartBuf *p, const Branch<const PartBuf*> *b) {
 		float l = length(p->pos - b->barycenter);
 		if(b->size/l < gth) {
 			return accel(p->pos, b->barycenter, b->mass);
@@ -194,28 +99,30 @@ public:
 	}
 	
 	virtual void solve(float dt, int steps = 1) override {
-		clock_t begin;
+		double begin;
 		
-		Branch trunk(nullfvec3, 1.0, 16);
+		Branch<const PartBuf*> trunk(nullfvec3, 4.0, 16);
 		
-		begin = clock();
+		begin = omp_get_wtime();
 		{
 			for(int i = 0; i < size; ++i) {
 				trunk.add(&parts[i]);
 			}
 			trunk.update();
 		}
-		t_tree += double(clock() - begin)/CLOCKS_PER_SEC;
+		t_tree += double(omp_get_wtime() - begin);
 		n_tree += 1;
 		
-		begin = clock();
+		begin = omp_get_wtime();
+		#pragma omp parallel for
 		for(int i = 0; i < size; ++i) {
 			parts[i].bpos[0] = parts[i].pos + dt*parts[i].vel;
 			parts[i].bvel[0] = parts[i].vel + dt*attract(&parts[i], &trunk);
 		}
-		t_grav += double(clock() - begin)/CLOCKS_PER_SEC;
+		t_grav += double(omp_get_wtime() - begin);
 		n_grav += 1;
 		
+		#pragma omp parallel for
 		for(int i = 0; i < size; ++i) {
 			parts[i].pos = parts[i].bpos[0];
 			parts[i].vel = parts[i].bvel[0];

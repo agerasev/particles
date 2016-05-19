@@ -58,7 +58,7 @@ public:
 		for(int i = 0; i < steps; ++i) {
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve"];
+			prog = bank->progs["solve-plain"];
 			prog->setUniform("u_sprop", sprop);
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			prog->setUniform("u_dt", dt/steps);
