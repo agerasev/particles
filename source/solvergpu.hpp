@@ -26,11 +26,12 @@ public:
 	SolverGPU(int size, GLBank *bank)
 	: Solver(size), bank(bank) {
 		sprop = new gl::Texture();
-		sprop->init(2, ivec2(size*sph, 1).data(), gl::Texture::RGBA32F);
+		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
 		
 		for(int k = 0; k < stages; ++k) {
 			gl::FrameBuffer *fb = new gl::FrameBuffer();
-			fb->init(gl::Texture::RGBA32F, size*dph, 1);
+			ivec2 ss = split_size(size*ps);
+			fb->init(gl::Texture::RGBA32F, ss.x(), ss.y());
 			dprops[k] = fb;
 		}
 		
@@ -62,6 +63,7 @@ public:
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			prog->setUniform("u_dt", dt/steps);
 			prog->setUniform("u_count", size);
+			prog->setUniform("MAXTS", maxts);
 			prog->evaluate(GL_QUADS, 0, 4);
 			fb->unbind();
 			dprops[1] = dprops[0];

@@ -14,12 +14,14 @@ public:
 	
 	GLBank() {
 		const char *shader_info[] = {
-			"draw.vert",
-			"draw.frag",
+			"draw-quad.vert",
+			"draw-quad.frag",
+			"draw-point.vert",
+			"draw-point.frag",
 			"fill.vert",
 			"solve.frag"
 		};
-		std::regex re_v("^[a-zA-Z0-9.]*\\.vert$"), re_f("^[a-zA-Z0-9.]*\\.frag$");
+		std::regex re_v("^[a-zA-Z0-9.-]*\\.vert$"), re_f("^[a-zA-Z0-9.-]*\\.frag$");
 		for(int i = 0; i < int(sizeof(shader_info)/sizeof(shader_info[0])); ++i) {
 			std::string name(shader_info[i]);
 			gl::Shader *shader = nullptr;
@@ -40,7 +42,8 @@ public:
 		}
 		
 		const char *program_info[][3] = {
-			{"draw", "draw.vert", "draw.frag"},
+			{"draw-quad", "draw-quad.vert", "draw-quad.frag"},
+			{"draw-point", "draw-point.vert", "draw-point.frag"},
 			{"solve", "fill.vert", "solve.frag"}
 		};
 		for(int j = 0; j < int(sizeof(program_info)/sizeof(program_info[0])); ++j) {

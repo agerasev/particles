@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <ctime>
 
 #include <vector>
 
@@ -133,18 +134,25 @@ private:
 	PartBuf *parts;
 	const float gth = 0.5;
 	
+	// profiling
+	double t_tree = 0.0, t_grav = 0.0;
+	int n_tree = 0, n_grav = 0;
+	
 public:
 	SolverCPU(int size) : Solver(size) {
 		parts = new PartBuf[size];
 		sprop = new gl::Texture();
-		sprop->init(2, ivec2(size*sph, 1).data(), gl::Texture::RGBA32F);
+		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
 		dprop = new gl::Texture();
-		dprop->init(2, ivec2(size*dph, 1).data(), gl::Texture::RGBA32F);
+		dprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
 	}
 	virtual ~SolverCPU() {
 		delete dprop;
 		delete sprop;
 		delete[] parts;
+		
+		printf("tree: %fl s\n", t_tree/n_tree);
+		printf("grav: %fl s\n", t_grav/n_grav);
 	}
 	
 	virtual void load(Particle parts[]) {
@@ -186,20 +194,33 @@ public:
 	}
 	
 	virtual void solve(float dt, int steps = 1) override {
-		Branch trunk(nullfvec3, 1.0, 16);
-		for(int i = 0; i < size; ++i) {
-			trunk.add(&parts[i]);
-		}
-		trunk.update();
+		clock_t begin;
 		
+		Branch trunk(nullfvec3, 1.0, 16);
+		
+		begin = clock();
+		{
+			for(int i = 0; i < size; ++i) {
+				trunk.add(&parts[i]);
+			}
+			trunk.update();
+		}
+		t_tree += double(clock() - begin)/CLOCKS_PER_SEC;
+		n_tree += 1;
+		
+		begin = clock();
 		for(int i = 0; i < size; ++i) {
 			parts[i].bpos[0] = parts[i].pos + dt*parts[i].vel;
 			parts[i].bvel[0] = parts[i].vel + dt*attract(&parts[i], &trunk);
 		}
+		t_grav += double(clock() - begin)/CLOCKS_PER_SEC;
+		n_grav += 1;
+		
 		for(int i = 0; i < size; ++i) {
 			parts[i].pos = parts[i].bpos[0];
 			parts[i].vel = parts[i].bvel[0];
 		}
+		
 		loadTex(parts);
 	}
 };

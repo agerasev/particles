@@ -10,6 +10,7 @@
 
 #include "gl/shader.hpp"
 #include "gl/program.hpp"
+#include "gl/framebuffer.hpp"
 
 #include "glbank.hpp"
 #include "solver.hpp"
@@ -19,7 +20,7 @@
 
 class Proj {
 public:
-	float f = 1e2, n = 1e-2;
+	float f = 1e4, n = 1e-2;
 	float w = n, h = n;
 	fmat4 mat = unifmat4;
 
@@ -42,7 +43,7 @@ public:
 	float rad = 1.0f;
 	
 	float sens = 1e-2f;
-	float phi = 0.0f, theta = 0.0f;
+	float phi = 0.0f, theta = M_PI_4;
 	
 	fmat4 mat = unifmat4;
 	
@@ -122,15 +123,26 @@ public:
 	}
 	
 	void render() {
-		gl::Program *prog = nullptr;
 		gl::FrameBuffer::unbind();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		prog = bank->progs["draw"];
+		
+		gl::Program *prog = nullptr;
+		
+		prog = bank->progs["draw-point"];
 		prog->setUniform("u_proj", proj.mat.data(), 16);
 		prog->setUniform("u_view", view.mat.data(), 16);
 		prog->setUniform("u_sprop", solver->sprop);
 		prog->setUniform("u_dprop", solver->dprop);
+		prog->setUniform("MAXTS", solver->maxts);
+		prog->evaluate(GL_POINTS, 0, solver->size);
+		
+		prog = bank->progs["draw-quad"];
+		prog->setUniform("u_proj", proj.mat.data(), 16);
+		prog->setUniform("u_view", view.mat.data(), 16);
+		prog->setUniform("u_sprop", solver->sprop);
+		prog->setUniform("u_dprop", solver->dprop);
+		prog->setUniform("MAXTS", solver->maxts);
 		prog->evaluate(GL_QUADS, 0, 4*solver->size);
 		
 		glFlush();

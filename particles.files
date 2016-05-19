@@ -24,8 +24,8 @@ scripts/init.sh
 scripts/make.bat
 source/engine.hpp
 source/graphics.hpp
-shaders/draw.frag
-shaders/draw.vert
+shaders/draw-quad.frag
+shaders/draw-quad.vert
 source/solver.hpp
 shaders/fill.vert
 shaders/solve.frag
@@ -39,3 +39,5 @@ source/solvercpu.hpp
 source/solvergpu.hpp
 source/particle.hpp
 source/glbank.hpp
+shaders/draw-point.vert
+shaders/draw-point.frag

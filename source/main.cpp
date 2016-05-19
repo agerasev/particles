@@ -17,11 +17,11 @@
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 1024;
+	const int size = 4*1024;
 	
 	GLBank bank;
-	// SolverCPU solver(size);
-	SolverGPU solver(size, &bank);
+	SolverCPU solver(size);
+	//SolverGPU solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 			p.pos = fvec3(x, y, 0.0);
 			p.vel = 
 				0.1*fvec3(rand(), rand(), rand()) + 
-				0.4f*fvec3(-y, x, 0.0)/sqrt(l);
+				1.0f*fvec3(-y, x, 0.0)*sqrt(l);
 			
 			p.color = fvec3(
 				x + 0.5, 
