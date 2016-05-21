@@ -122,11 +122,15 @@ public:
 			for(int i = 0; i < int(b->buffer.size()); ++i) {
 				const Particle *p = b->buffer[i];
 				float *data = tree_data_buffer + 4*data_pos;
-				data_pos += 1;
+				data_pos += 2;
 				data[0] = p->pos.x();
 				data[1] = p->pos.y();
 				data[2] = p->pos.z();
 				data[3] = p->mass;
+				data[4] = p->vel.x();
+				data[5] = p->vel.y();
+				data[6] = p->vel.z();
+				data[7] = p->rad;
 			}
 		} else {
 			sb[2] = 0;

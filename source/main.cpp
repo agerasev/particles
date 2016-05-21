@@ -21,11 +21,12 @@ int main(int argc, char *argv[]) {
 	
 	const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
+	//const int size = 16*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);
-	SolverGPU solver(size, &bank);
-	//SolverHybrid solver(size, &bank);
+	//SolverGPU solver(size, &bank);  // better for N < 64k
+	SolverHybrid solver(size, &bank);  // better for N > 64k
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	
@@ -58,6 +59,8 @@ int main(int argc, char *argv[]) {
 			float y = cr/nr*sin(a);
 			float z = 0.0;
 			float l = sqrt(x*x + y*y + z*z);
+			
+			p.id = i;
 			
 			p.mass = 1e3/size;
 			p.rad = 2e-1/sqrt(size);

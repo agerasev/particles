@@ -4,6 +4,8 @@
 
 class Particle {
 public:
+	int id;
+	
 	// static properties
 	float mass;
 	float rad;

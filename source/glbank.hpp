@@ -21,9 +21,9 @@ public:
 			"fill.vert",
 			"solve-plain-euler.frag",
 			"solve-plain-rk4-d.frag",
-			"solve-plain-rk4-v-1-2.frag",
-			"solve-plain-rk4-v-3.frag",
-			"solve-plain-rk4-v-4.frag",
+			"solve-rk4-v-1-2.frag",
+			"solve-rk4-v-3.frag",
+			"solve-rk4-v-4.frag",
 			"solve-tree-euler.frag"
 		};
 		std::regex re_v("^[a-zA-Z0-9.-]*\\.vert$"), re_f("^[a-zA-Z0-9.-]*\\.frag$");
@@ -53,9 +53,9 @@ public:
 			{"solve-plain-euler", "fill.vert", "solve-plain-euler.frag"},
 		
 			{"solve-plain-rk4-d",     "fill.vert", "solve-plain-rk4-d.frag"},
-			{"solve-plain-rk4-v-1-2", "fill.vert", "solve-plain-rk4-v-1-2.frag"},
-			{"solve-plain-rk4-v-3",   "fill.vert", "solve-plain-rk4-v-3.frag"},
-			{"solve-plain-rk4-v-4",   "fill.vert", "solve-plain-rk4-v-4.frag"},
+			{"solve-rk4-v-1-2", "fill.vert", "solve-rk4-v-1-2.frag"},
+			{"solve-rk4-v-3",   "fill.vert", "solve-rk4-v-3.frag"},
+			{"solve-rk4-v-4",   "fill.vert", "solve-rk4-v-4.frag"},
 		
 			{"solve-tree-euler", "fill.vert", "solve-tree-euler.frag"}
 		};

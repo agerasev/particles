@@ -89,7 +89,7 @@ public:
 			
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve-plain-rk4-v-1-2"];
+			prog = bank->progs["solve-rk4-v-1-2"];
 			prog->setUniform("u_deriv_1_2", derivs[0]->getTexture());
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			setUniforms(prog, dt, steps);
@@ -108,7 +108,7 @@ public:
 			
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve-plain-rk4-v-1-2"];
+			prog = bank->progs["solve-rk4-v-1-2"];
 			prog->setUniform("u_deriv_1_2", derivs[1]->getTexture());
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			setUniforms(prog, dt, steps);
@@ -127,7 +127,7 @@ public:
 			
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve-plain-rk4-v-3"];
+			prog = bank->progs["solve-rk4-v-3"];
 			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			setUniforms(prog, dt, steps);
@@ -146,7 +146,7 @@ public:
 			
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve-plain-rk4-v-4"];
+			prog = bank->progs["solve-rk4-v-4"];
 			prog->setUniform("u_deriv_1", derivs[0]->getTexture());
 			prog->setUniform("u_deriv_2", derivs[1]->getTexture());
 			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
