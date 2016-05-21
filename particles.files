@@ -52,3 +52,4 @@ shaders/solve-plain-rk4-d.frag
 shaders/solve-main.glsl
 shaders/solve-head.glsl
 shaders/tree.glsl
+shaders/solve-tree-rk4-d.frag

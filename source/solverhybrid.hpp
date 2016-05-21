@@ -26,6 +26,8 @@ private:
 		tls = 2, // tree_link entry size
 		tds = 2; // tree_data entry size
 	
+	typedef Branch<const Particle*> PBranch;
+	
 public:
 	SolverHybrid(int size, GLBank *bank) : SolverGPU(size, bank) {
 		parts = new Particle[size];
@@ -57,6 +59,7 @@ public:
 		loadTex(parts);
 	}
 	
+	/*
 	virtual void solve(float dt, int steps = 1) override {
 		downloadTex();
 		
@@ -90,6 +93,136 @@ public:
 			prog->setUniform("MAXTS", maxts);
 			prog->evaluate(GL_QUADS, 0, 4);
 			fb->unbind();
+			dprops[1] = dprops[0];
+			dprops[0] = fb;
+		}
+		
+		dprop = dprops[0]->getTexture();
+	}
+	*/
+	
+	void updateTree(gl::Texture *dprop) {
+		downloadTex(dprop);
+		
+		PBranch trunk(nullfvec3, tree_size, tree_depth);
+		for(int i = 0; i < size; ++i) {
+			trunk.add(&parts[i]);
+		}
+		trunk.update();
+		
+		loadTree(&trunk);
+	}
+	
+	void setUniforms(gl::Program *prog, float dt, int steps, bool set_tree = true) {
+		prog->setUniform("u_sprop", sprop);
+		
+		if(set_tree) { 
+			prog->setUniform("u_tree", &tree);
+			prog->setUniform("u_tree_link", &tree_link);
+			prog->setUniform("u_tree_data", &tree_data);
+			prog->setUniform("u_gth", gth);
+		}
+		
+		prog->setUniform("u_dt", dt/steps);
+		prog->setUniform("u_count", size);
+		prog->setUniform("MAXTS", maxts);
+		prog->setUniform("u_eps", eps);
+	}
+	
+	virtual void solve(float dt, int steps = 1) override {
+		gl::FrameBuffer *fb = nullptr;
+		gl::Program *prog = nullptr;
+		
+		for(int i = 0; i < steps; ++i) {
+			
+			// stage 1
+			
+			updateTree(dprops[0]->getTexture());
+			
+			fb = derivs[0];
+			fb->bind();
+			prog = bank->progs["solve-tree-rk4-d"];
+			prog->setUniform("u_dprop", dprops[0]->getTexture());
+			setUniforms(prog, dt, steps);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			fb = dprops[1];
+			fb->bind();
+			prog = bank->progs["solve-rk4-v-1-2"];
+			prog->setUniform("u_deriv_1_2", derivs[0]->getTexture());
+			prog->setUniform("u_dprop", dprops[0]->getTexture());
+			setUniforms(prog, dt, steps, false);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			// stage 2
+			
+			updateTree(dprops[1]->getTexture());
+			
+			fb = derivs[1];
+			fb->bind();
+			prog = bank->progs["solve-tree-rk4-d"];
+			prog->setUniform("u_dprop", dprops[1]->getTexture());
+			setUniforms(prog, dt, steps);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			fb = dprops[1];
+			fb->bind();
+			prog = bank->progs["solve-rk4-v-1-2"];
+			prog->setUniform("u_deriv_1_2", derivs[1]->getTexture());
+			prog->setUniform("u_dprop", dprops[0]->getTexture());
+			setUniforms(prog, dt, steps, false);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			// stage 3
+			
+			updateTree(dprops[1]->getTexture());
+			
+			fb = derivs[2];
+			fb->bind();
+			prog = bank->progs["solve-tree-rk4-d"];
+			prog->setUniform("u_dprop", dprops[1]->getTexture());
+			setUniforms(prog, dt, steps);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			fb = dprops[1];
+			fb->bind();
+			prog = bank->progs["solve-rk4-v-3"];
+			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
+			prog->setUniform("u_dprop", dprops[0]->getTexture());
+			setUniforms(prog, dt, steps, false);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			// stage 4 
+			
+			updateTree(dprops[1]->getTexture());
+			
+			fb = derivs[3];
+			fb->bind();
+			prog = bank->progs["solve-tree-rk4-d"];
+			prog->setUniform("u_dprop", dprops[1]->getTexture());
+			setUniforms(prog, dt, steps);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			fb = dprops[1];
+			fb->bind();
+			prog = bank->progs["solve-rk4-v-4"];
+			prog->setUniform("u_deriv_1", derivs[0]->getTexture());
+			prog->setUniform("u_deriv_2", derivs[1]->getTexture());
+			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
+			prog->setUniform("u_deriv_4", derivs[3]->getTexture());
+			prog->setUniform("u_dprop", dprops[0]->getTexture());
+			setUniforms(prog, dt, steps, false);
+			prog->evaluate(GL_QUADS, 0, 4);
+			fb->unbind();
+			
+			fb = dprops[1];
 			dprops[1] = dprops[0];
 			dprops[0] = fb;
 		}
@@ -162,7 +295,7 @@ public:
 		);
 	}
 	
-	void downloadTex() {
+	void downloadTex(gl::Texture *dprop) {
 		float *buf = buffer;
 		
 		sprop->read(buf, gl::Texture::RGBA, gl::Type::FLOAT);

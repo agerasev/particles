@@ -12,7 +12,7 @@ vec3 vel_main(int id) {
 	vec3 acc = vec3(0);
 	int i;
 	for(i = 0; i < u_count; ++i) {
-		acc += gravity_new(id, i);
+		acc += gravity(id, i);
 	}
 	return vel(id) + u_dt*acc;
 }

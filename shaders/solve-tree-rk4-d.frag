@@ -3,18 +3,14 @@
 #include "gravity.glsl"
 
 #include "solve-head.glsl"
+#include "tree.glsl"
 
 vec3 pos_main(int id) {
 	return vel(id);
 }
 
 vec3 vel_main(int id) {
-	vec3 acc = vec3(0);
-	int i;
-	for(i = 0; i < u_count; ++i) {
-		acc += gravity(id, i);
-	}
-	return acc;
+	return grav_tree(id);
 }
 
 #include "solve-main.glsl"
