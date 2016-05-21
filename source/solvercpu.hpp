@@ -44,7 +44,6 @@ private:
 	typedef Branch<const PartBuf*> PBranch;
 	
 	PartBuf *parts;
-	const float gth = 0.5;
 	
 	// profiling
 	double t_tree = 0.0, t_grav = 0.0;
@@ -73,21 +72,20 @@ public:
 		}
 	}
 	
-	static fvec3 accel(fvec3 apos, fvec3 bpos, float bmass) {
+	fvec3 grav(fvec3 apos, fvec3 bpos, float bmass) {
 		fvec3 r = apos - bpos;
-		float eps = 2e-2;
 		float l = sqrt(dot(r,r) + eps*eps);
 		return -1e-4*bmass*r/(l*l*l);
 	}
 	
 	fvec3 attract(PartBuf *p, const PartBuf *op) {
-		return accel(p->pos, op->pos, op->mass);
+		return grav(p->pos, op->pos, op->mass);
 	}
 	
 	fvec3 attract(PartBuf *p, const Branch<const PartBuf*> *b) {
 		float l = length(p->pos - b->barycenter);
 		if(b->size/l < gth) {
-			return accel(p->pos, b->barycenter, b->mass);
+			return grav(p->pos, b->barycenter, b->mass);
 		} else {
 			fvec3 acc = nullfvec3;
 			if(b->leaf) {
@@ -104,7 +102,7 @@ public:
 	}
 	
 	PBranch *buildTree() {
-		PBranch *trunc = new PBranch(nullfvec3, 4.0, 16);
+		PBranch *trunc = new PBranch(nullfvec3, tree_size, tree_depth);
 		double begin = omp_get_wtime();
 		for(int i = 0; i < size; ++i) {
 			trunc->add(&parts[i]);

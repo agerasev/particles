@@ -5,12 +5,6 @@
 uniform mat4 u_view;
 uniform mat4 u_proj;
 
-uniform sampler2D u_sprop;
-uniform sampler2D u_dprop;
-
-#define sp u_sprop
-#define dp u_dprop
-
 out vec2 vf_coord;
 out float vf_shadow;
 flat out int vf_id;
@@ -19,8 +13,8 @@ void main() {
 	int id = gl_VertexID/4;
 	int vc = gl_VertexID%4;
 	
-	float rad = rad(sp, id);
-	vec4 pos = vec4(pos(dp, id), 1);
+	float rad = rad(id);
+	vec4 pos = vec4(pos(id), 1);
 	
 	vec2 dir = vec2(0.0, 0.0);
 	if(vc == 0 || vc == 1) {

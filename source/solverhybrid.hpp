@@ -12,12 +12,10 @@
 class SolverHybrid : public SolverGPU {
 private:
 	Particle *parts;
-	const float gth = 0.5;
+	
 	gl::Texture tree;
 	gl::Texture tree_link;
 	gl::Texture tree_data;
-	
-	const int td = ceil(log2(size)/3); // tree depth
 	
 	int *tree_buffer = nullptr;
 	int *tree_link_buffer = nullptr;
@@ -33,15 +31,15 @@ public:
 		parts = new Particle[size];
 		
 		ivec2 texs;
-		texs = split_size(td*size*ts);
+		texs = split_size(tree_depth*size*ts);
 		tree.init(2, texs.data(), gl::Texture::RGBA32I);
 		tree_buffer = new int[4*texs[0]*texs[1]];
 		
-		texs = split_size(td*size*tls);
+		texs = split_size(tree_depth*size*tls);
 		tree_link.init(2, texs.data(), gl::Texture::RGBA32I);
 		tree_link_buffer = new int[4*texs[0]*texs[1]];
 		
-		texs = split_size(td*size*tds);
+		texs = split_size(tree_depth*size*tds);
 		tree_data.init(2, texs.data(), gl::Texture::RGBA32F);
 		tree_data_buffer = new float[4*texs[0]*texs[1]];
 	}
@@ -62,7 +60,7 @@ public:
 	virtual void solve(float dt, int steps = 1) override {
 		downloadTex();
 		
-		Branch<const Particle*> trunk(nullfvec3, 4.0, 16);
+		Branch<const Particle*> trunk(nullfvec3, tree_size, tree_depth);
 		for(int i = 0; i < size; ++i) {
 			trunk.add(&parts[i]);
 		}
@@ -77,7 +75,7 @@ public:
 		for(int i = 0; i < steps; ++i) {
 			fb = dprops[1];
 			fb->bind();
-			prog = bank->progs["solve-tree"];
+			prog = bank->progs["solve-tree-euler"];
 			prog->setUniform("u_sprop", sprop);
 			prog->setUniform("u_dprop", dprops[0]->getTexture());
 			
@@ -85,6 +83,7 @@ public:
 			prog->setUniform("u_tree_link", &tree_link);
 			prog->setUniform("u_tree_data", &tree_data);
 			prog->setUniform("u_gth", gth);
+			prog->setUniform("u_eps", eps);
 			
 			prog->setUniform("u_dt", dt/steps);
 			prog->setUniform("u_count", size);

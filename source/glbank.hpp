@@ -19,8 +19,12 @@ public:
 			"draw-point.vert",
 			"draw-point.frag",
 			"fill.vert",
-			"solve-plain.frag",
-			"solve-tree.frag"
+			"solve-plain-euler.frag",
+			"solve-plain-rk4-d.frag",
+			"solve-plain-rk4-v-1-2.frag",
+			"solve-plain-rk4-v-3.frag",
+			"solve-plain-rk4-v-4.frag",
+			"solve-tree-euler.frag"
 		};
 		std::regex re_v("^[a-zA-Z0-9.-]*\\.vert$"), re_f("^[a-zA-Z0-9.-]*\\.frag$");
 		for(int i = 0; i < int(sizeof(shader_info)/sizeof(shader_info[0])); ++i) {
@@ -45,8 +49,15 @@ public:
 		const char *program_info[][3] = {
 			{"draw-quad", "draw-quad.vert", "draw-quad.frag"},
 			{"draw-point", "draw-point.vert", "draw-point.frag"},
-			{"solve-plain", "fill.vert", "solve-plain.frag"},
-			{"solve-tree", "fill.vert", "solve-tree.frag"}
+		
+			{"solve-plain-euler", "fill.vert", "solve-plain-euler.frag"},
+		
+			{"solve-plain-rk4-d",     "fill.vert", "solve-plain-rk4-d.frag"},
+			{"solve-plain-rk4-v-1-2", "fill.vert", "solve-plain-rk4-v-1-2.frag"},
+			{"solve-plain-rk4-v-3",   "fill.vert", "solve-plain-rk4-v-3.frag"},
+			{"solve-plain-rk4-v-4",   "fill.vert", "solve-plain-rk4-v-4.frag"},
+		
+			{"solve-tree-euler", "fill.vert", "solve-tree-euler.frag"}
 		};
 		for(int j = 0; j < int(sizeof(program_info)/sizeof(program_info[0])); ++j) {
 			std::string name(program_info[j][0]);

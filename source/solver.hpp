@@ -15,6 +15,12 @@ public:
 	float dt = 1e-2;
 	int steps = 1;
 	
+	float gth = 0.1;
+	float eps = 1e1;
+	
+	float tree_size = 16.0;
+	int tree_depth = 16;
+	
 	int maxts = 0;
 	
 	ivec2 split_size(int s) {
