@@ -18,76 +18,84 @@
 
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
-	
-	const int size = 2*1024 - 19; 
-	//const int size = 4*1024 + 70;
-	//const int size = 16*1024;
-	
 	GLBank bank;
-	//SolverCPU solver(size);
-	//SolverGPU solver(size, &bank);  // better for N < 64k
-	SolverHybrid solver(size, &bank);  // better for N > 64k
-	solver.dt = 1e-2;
-	solver.steps = 1;
 	
-	Graphics gfx(&bank, &solver);
-	
-	engine.setGraphics(&gfx);
-	engine.setSolver(&solver);
-	
-	{
-		std::vector<Particle> parts(size);
+	int minpow = 0;
+	int maxpow = 7;
+	int steps = 12;
+	for(int i = minpow*steps; i <= maxpow*steps; ++i) {
+		//const int size = 2*1024 - 19; 
+		//const int size = 4*1024 + 70;
+		//const int size = 80*1024;
 		
-		std::minstd_rand rand_engine;
-		std::uniform_real_distribution<> rand_dist(-0.5, 0.5);
-		std::function<float()> rand = [&rand_engine, &rand_dist]() {
-			return rand_dist(rand_engine);
-		};
+		const int size = pow(2.0, double(i)/steps)*1024;
+		printf("%d, ", size);
 		
+		//SolverCPU solver(size);
+		SolverGPU solver(size, &bank);
+		//SolverHybrid solver(size, &bank);
+		solver.dt = 1e-2;
+		solver.steps = 1;
 		
-		float side = 2.0*pow(double(size), 1.0/2.0);
-		float nr = side/sqrt(2*M_PI);
-		float na = side*sqrt(2*M_PI);
+		Graphics gfx(&bank, &solver);
 		
-		int ca = 0, cr = 1;
-		for(int i = 0; i < size; ++i) {
-			Particle p;
-			int cna = int(na*cr/nr);
+		engine.setGraphics(&gfx);
+		engine.setSolver(&solver);
+		
+		{
+			std::vector<Particle> parts(size);
 			
-			float a = 2*M_PI*float(ca)/cna;
-			float x = cr/nr*cos(a);
-			float y = cr/nr*sin(a);
-			float z = 0.0;
-			float l = sqrt(x*x + y*y + z*z);
+			std::minstd_rand rand_engine;
+			std::uniform_real_distribution<> rand_dist(-0.5, 0.5);
+			std::function<float()> rand = [&rand_engine, &rand_dist]() {
+				return rand_dist(rand_engine);
+			};
 			
-			p.id = i;
 			
-			p.mass = 1e3/size;
-			p.rad = 2e-1/sqrt(size);
+			float side = 2.0*pow(double(size), 1.0/2.0);
+			float nr = side/sqrt(2*M_PI);
+			float na = side*sqrt(2*M_PI);
 			
-			p.pos = fvec3(x, y, z);
-			p.vel = 
-				0.1*fvec3(rand(), rand(), rand()) + 
-				0.7f*fvec3(-y, x, 0.0)*sqrt(l);
-			
-			p.color = fvec3(
-				x + 0.5, 
-				y + 0.5, 
-				1.0 - 0.5*(x + y + 1.0)
-			);
-			
-			parts[i] = p;
-			
-			ca += 1;
-			if(ca >= cna) {
-				cr += 1;
-				ca = 0;
+			int ca = 0, cr = 1;
+			for(int i = 0; i < size; ++i) {
+				Particle p;
+				int cna = int(na*cr/nr);
+				
+				float a = 2*M_PI*float(ca)/cna;
+				float x = cr/nr*cos(a);
+				float y = cr/nr*sin(a);
+				float z = 0.0;
+				float l = sqrt(x*x + y*y + z*z);
+				
+				p.id = i;
+				
+				p.mass = 1e3/size;
+				p.rad = 2e-1/sqrt(size);
+				
+				p.pos = fvec3(x, y, z);
+				p.vel = 
+					0.1*fvec3(rand(), rand(), rand()) + 
+					0.7f*fvec3(-y, x, 0.0)*sqrt(l);
+				
+				p.color = fvec3(
+					x + 0.5, 
+					y + 0.5, 
+					1.0 - 0.5*(x + y + 1.0)
+				);
+				
+				parts[i] = p;
+				
+				ca += 1;
+				if(ca >= cna) {
+					cr += 1;
+					ca = 0;
+				}
 			}
+			solver.load(parts.data());
 		}
-		solver.load(parts.data());
+		
+		engine.loop(true);
 	}
-	
-	engine.loop();
 	
 	return 0;
 }

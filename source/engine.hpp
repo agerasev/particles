@@ -96,11 +96,31 @@ public:
 		return true;
 	}
 	
-	void loop() {
+	void loop(bool once = false) {
 		while(handle()) {
+			Uint32 b, e;
+			
+			b = SDL_GetTicks();
 			solver->solve();
+			glFlush();
+			glFinish();
+			e = SDL_GetTicks();
+			// printf("solve: %lf s\n", double(e - b)/1e3);
+			printf("%lf\n", double(e - b)/1e3);
+			fflush(stdout);
+			
+			b = SDL_GetTicks();
 			gfx->render();
+			glFlush();
+			glFinish();
+			e = SDL_GetTicks();
+			// printf("render: %lf s\n", double(e - b)/1e3);
+			//fflush(stdout);
+			
 			SDL_GL_SwapWindow(window);
+			
+			if(once)
+				break;
 		}
 	}
 	

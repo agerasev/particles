@@ -15,11 +15,11 @@ public:
 	float dt = 1e-2;
 	int steps = 1;
 	
-	float gth = 0.1;
+	float gth = 0.2;
 	float eps = 1e1;
 	
 	float tree_size = 16.0;
-	int tree_depth = 16;
+	int tree_depth = 32;
 	
 	int maxts = 0;
 	
@@ -36,7 +36,7 @@ public:
 	
 	Solver(int size) : size(size) {
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxts);
-		printf("GL_MAX_TEXTURE_SIZE: %d\n", maxts);
+		// printf("GL_MAX_TEXTURE_SIZE: %d\n", maxts);
 		ivec2 texs = split_size(size*ps);
 		buffer = new float[4*texs[0]*texs[1]];
 	}

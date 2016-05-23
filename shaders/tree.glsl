@@ -60,7 +60,7 @@ vec3 grav_branch(int id, int ti, out bool next) {
 	return vec3(0);
 }
 
-#define RECD 16
+#define RECD 32
 vec3 grav_tree(int id) {
 	// recursion emulation
 	ivec2 stack[RECD];

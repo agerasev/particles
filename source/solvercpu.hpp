@@ -62,8 +62,8 @@ public:
 		delete sprop;
 		delete[] parts;
 		
-		printf("tree: %lf s\n", t_tree/n_tree);
-		printf("grav: %lf s\n", t_grav/n_grav);
+		//printf("tree: %lf s\n", t_tree/n_tree);
+		//printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
 	virtual void load(Particle parts[]) {
