@@ -4,3 +4,6 @@
 [submodule "libla"]
 	path = libla
 	url = https://github.com/nthend/libla.git
+[submodule "libcl4u"]
+	path = libcl4u
+	url = https://github.com/nthend/libcl4u.git

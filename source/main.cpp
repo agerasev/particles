@@ -12,21 +12,23 @@
 #include "engine.hpp"
 #include "particle.hpp"
 
-#include "solvercpu.hpp"
+//#include "solvercpu.hpp"
 #include "solvergpu.hpp"
-#include "solverhybrid.hpp"
+//#include "solverhybrid.hpp"
+
 
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
-	const int size = 2*1024 - 19; 
+	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	//const int size = 16*1024;
+	const int size = 16*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);
-	//SolverGPU solver(size, &bank);  // better for N < 64k
-	SolverHybrid solver(size, &bank);  // better for N > 64k
+	//SolverGPUGL solver(size, &bank);
+	SolverGPUCL solver(size); // 4 times faster than GL
+	//SolverHybrid solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	

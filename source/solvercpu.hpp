@@ -112,7 +112,7 @@ public:
 		return trunk;
 	}
 	
-	virtual void solve(float dt, int steps = 1) override {
+	virtual void solve(float dt) override {
 		double begin;
 		PBranch *trunk;
 		

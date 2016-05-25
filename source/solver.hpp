@@ -4,6 +4,9 @@
 
 #include "particle.hpp"
 
+#include "opencl.hpp"
+#include <export/particle.h>
+
 class Solver {
 public:
 	const int size;
@@ -42,6 +45,30 @@ public:
 	}
 	virtual ~Solver() {
 		delete[] buffer;
+	}
+	
+	void clLoadTex(float *parts) {
+		float *buf = buffer;
+		
+		for(int i = 0; i < size; ++i) {
+			Part p = part_load(i, parts);
+
+			//position
+			buf[4*(i*ps + 0) + 0] = p.pos.data[0];
+			buf[4*(i*ps + 0) + 1] = p.pos.data[1];
+			buf[4*(i*ps + 0) + 2] = p.pos.data[2];
+			buf[4*(i*ps + 0) + 3] = 1.0f;
+
+			// velocity
+			buf[4*(i*ps + 1) + 0] = p.vel.data[0];
+			buf[4*(i*ps + 1) + 1] = p.vel.data[1];
+			buf[4*(i*ps + 1) + 2] = p.vel.data[2];
+			buf[4*(i*ps + 1) + 3] = 1.0f;
+		}
+		dprop->write(
+			buf, nullivec2.data(), split_size(size*ps).data(), 
+			gl::Texture::RGBA, gl::FLOAT
+		);
 	}
 	
 	template <typename T>
@@ -89,8 +116,8 @@ public:
 	}
 
 	virtual void load(Particle parts[]) = 0;
-	virtual void solve(float dt, int steps = 1) = 0;
+	virtual void solve(float dt) = 0;
 	void solve() {
-		solve(dt, steps);
+		solve(dt);
 	}
 };
