@@ -2,216 +2,35 @@
 
 #include "solver.hpp"
 
-#include <cmath>
-
-#include <map>
-#include <string>
-
-#include "gl/program.hpp"
-#include "gl/texture.hpp"
-#include "gl/framebuffer.hpp"
-
-#include <la/vec.hpp>
-
-#include "glbank.hpp"
-
-#define sizeofarr(array) \
-	int(sizeof(array)/sizeof(array[0]))
-
-class SolverGPUGL : public Solver {
-public:
-	gl::FrameBuffer *dprops[2];
-	gl::FrameBuffer *derivs[4];
-	
-	GLBank *bank;
-	
-public:
-	SolverGPUGL(int size, GLBank *bank)
-	: Solver(size), bank(bank) {
-		sprop = new gl::Texture();
-		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
-		
-		for(int k = 0; k < sizeofarr(derivs); ++k) {
-			gl::FrameBuffer *fb = new gl::FrameBuffer();
-			fb->init(2, gl::Texture::RGBA32F, split_size(size*ps).data());
-			derivs[k] = fb;
-		}
-		
-		for(int k = 0; k < sizeofarr(dprops); ++k) {
-			gl::FrameBuffer *fb = new gl::FrameBuffer();
-			fb->init(2, gl::Texture::RGBA32F, split_size(size*ps).data());
-			dprops[k] = fb;
-		}
-		
-		dprop = dprops[0]->getTexture();
-	}
-	
-	virtual ~SolverGPUGL() {
-		dprop = nullptr;
-		for(int k = 0; k < sizeofarr(dprops); ++k) {
-			delete dprops[k];
-		}
-		
-		for(int k = 0; k < sizeofarr(derivs); ++k) {
-			delete derivs[k];
-		}
-		
-		delete sprop;
-	}
-	
-	virtual void load(Particle parts[]) override {
-		loadTex(parts);
-	}
-	
-	void setUniforms(gl::Program *prog, float dt, int steps) {
-		prog->setUniform("u_sprop", sprop);
-		prog->setUniform("u_dt", dt/steps);
-		prog->setUniform("u_count", size);
-		prog->setUniform("MAXTS", maxts);
-		prog->setUniform("u_eps", eps);
-	}
-	
-	virtual void solve(float dt) override {
-		gl::FrameBuffer *fb = nullptr;
-		gl::Program *prog = nullptr;
-		
-		
-		if(true) {
-			
-			// Euler
-			
-			fb = dprops[1];
-			fb->bind();
-			prog = bank->progs["solve-plain-euler"];
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-		} else {
-			
-			// RK4
-			
-			// stage 1
-			
-			fb = derivs[0];
-			fb->bind();
-			prog = bank->progs["solve-plain-rk4-d"];
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			fb = dprops[1];
-			fb->bind();
-			prog = bank->progs["solve-rk4-v-1-2"];
-			prog->setUniform("u_deriv_1_2", derivs[0]->getTexture());
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			// stage 2
-			
-			fb = derivs[1];
-			fb->bind();
-			prog = bank->progs["solve-plain-rk4-d"];
-			prog->setUniform("u_dprop", dprops[1]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			fb = dprops[1];
-			fb->bind();
-			prog = bank->progs["solve-rk4-v-1-2"];
-			prog->setUniform("u_deriv_1_2", derivs[1]->getTexture());
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			// stage 3
-			
-			fb = derivs[2];
-			fb->bind();
-			prog = bank->progs["solve-plain-rk4-d"];
-			prog->setUniform("u_dprop", dprops[1]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			fb = dprops[1];
-			fb->bind();
-			prog = bank->progs["solve-rk4-v-3"];
-			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			// stage 4 
-			
-			fb = derivs[3];
-			fb->bind();
-			prog = bank->progs["solve-plain-rk4-d"];
-			prog->setUniform("u_dprop", dprops[1]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-			
-			fb = dprops[1];
-			fb->bind();
-			prog = bank->progs["solve-rk4-v-4"];
-			prog->setUniform("u_deriv_1", derivs[0]->getTexture());
-			prog->setUniform("u_deriv_2", derivs[1]->getTexture());
-			prog->setUniform("u_deriv_3", derivs[2]->getTexture());
-			prog->setUniform("u_deriv_4", derivs[3]->getTexture());
-			prog->setUniform("u_dprop", dprops[0]->getTexture());
-			setUniforms(prog, dt, steps);
-			prog->evaluate(GL_QUADS, 0, 4);
-			fb->unbind();
-		
-		}
-		
-		fb = dprops[1];
-		dprops[1] = dprops[0];
-		dprops[0] = fb;
-		
-		dprop = dprops[0]->getTexture();
-	}
-};
-
-
 #include <cl/session.hpp>
 #include <cl/queue.hpp>
 #include <cl/context.hpp>
-#include <cl/buffer_object.hpp>
 #include <cl/program.hpp>
 #include <cl/map.hpp>
+#include <cl/buffer_object.hpp>
+#include <cl/gl_image_object.hpp>
 
 #include "opencl.hpp"
 #include <export/particle.h>
+#include <export/deriv.h>
 
-class SolverGPUCL : public Solver {
+class SolverGPU : public Solver {
 private:
 	cl::session *session;
 	cl::queue *queue;
 	
-	cl::map<cl::buffer_object*> buffers; 
+	cl::map<cl::buffer_object*> buffers;
+	cl::gl_image_object *image;
 	
 	cl::program *program;
 	cl::map<cl::kernel*> kernels;
 	
-	float *clbuffer = nullptr;
-	
 public:
-	SolverGPUCL(const int size) : Solver(size) {
+	SolverGPU(const int size) : Solver(size) {
+		ivec2 texs = split_size(size*ps);
 		sprop = new gl::Texture();
-		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
 		dprop = new gl::Texture();
-		dprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
-		
-		clbuffer = new float[PART_SIZE*size];
+		sprop->init(2, texs.data(), gl::Texture::RGBA32F);
 		
 		session = new cl::session();
 		queue = &session->get_queue();
@@ -220,9 +39,17 @@ public:
 		
 		buffers.insert("part0", new cl::buffer_object(context, PART_SIZE*size));
 		buffers.insert("part1", new cl::buffer_object(context, PART_SIZE*size));
+		buffers.insert("deriv0", new cl::buffer_object(context, DERIV_SIZE*size));
+		buffers.insert("deriv1", new cl::buffer_object(context, DERIV_SIZE*size));
+		buffers.insert("deriv2", new cl::buffer_object(context, DERIV_SIZE*size));
+		buffers.insert("deriv3", new cl::buffer_object(context, DERIV_SIZE*size));
 		for(cl::buffer_object *b : buffers) {
 			b->bind_queue(queue->get_cl_command_queue());
 		}
+		
+		image = new cl::gl_image_object(context, texs.x(), texs.y());
+		image->bind_queue(queue->get_cl_command_queue());
+		dprop->wrap(image->get_texture(), 2, texs.data(), gl::Texture::RGBA32F);
 		
 		program = new cl::program(context, session->get_device_id(), "kernels.c", "kernels");
 		kernels = program->get_kernel_map();
@@ -231,10 +58,12 @@ public:
 		}
 	}
 	
-	virtual ~SolverGPUCL() {
+	virtual ~SolverGPU() {
 		session->get_queue().flush();
 		
 		delete program;
+		
+		delete image;
 		
 		for(cl::buffer_object *b : buffers) {
 			delete b;
@@ -242,11 +71,16 @@ public:
 		
 		delete session;
 		
-		delete[] clbuffer;
+		delete sprop;
+		delete dprop;
 	}
 	
 	virtual void load(Particle parts[]) override {
-		float *buf = clbuffer;
+		
+		// load to cl buffer
+		
+		float *buf = new float[PART_FSIZE*size];
+		
 		for(int i = 0; i < size; ++i) {
 			Part pg;
 			const Particle &pc = parts[i];
@@ -260,21 +94,95 @@ public:
 		}
 		buffers["part0"]->store_data(buf);
 		
-		loadTex(parts);
+		delete[] buf;
+		
+		
+		// load to gl texture
+		
+		for(int i = 0; i < size; ++i) {
+			Particle &p = parts[i];
+	
+			buf[4*(i*ps + 0) + 0] = p.rad;
+			buf[4*(i*ps + 0) + 1] = 0.0f;
+			buf[4*(i*ps + 0) + 2] = 0.0f;
+			buf[4*(i*ps + 0) + 3] = p.mass;
+		
+			// color
+			buf[4*(i*ps + 1) + 0] = p.color.x();
+			buf[4*(i*ps + 1) + 1] = p.color.y();
+			buf[4*(i*ps + 1) + 2] = p.color.z();
+			buf[4*(i*ps + 1) + 3] = 1.0f;
+		}
+		
+		sprop->write(
+			buf, nullivec2.data(), split_size(size*ps).data(), 
+			gl::Texture::RGBA, gl::FLOAT
+		);
 	}
 	
 	virtual void solve(float dt) override {
-		kernels["solve_plain_euler"]->evaluate(
-			cl::work_range(size), buffers["part0"], 
-			buffers["part1"], size, eps, dt
-		);
+		
+		// solve
+		
+		if(rk4) {
+			// stage 1
+			kernels["solve_plain_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part0"], 
+				buffers["deriv0"], size, eps
+			);
+			kernels["solve_rk4_v_1_2"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv0"], size, dt
+			);
+			
+			// stage 2
+			kernels["solve_plain_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], 
+				buffers["deriv1"], size, eps
+			);
+			kernels["solve_rk4_v_1_2"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv1"], size, dt
+			);
+			
+			// stage 1
+			kernels["solve_plain_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], 
+				buffers["deriv2"], size, eps
+			);
+			kernels["solve_rk4_v_3"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv2"], size, dt
+			);
+			
+			// stage 1
+			kernels["solve_plain_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], 
+				buffers["deriv3"], size, eps
+			);
+			kernels["solve_rk4_v_4"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv0"], buffers["deriv1"], buffers["deriv2"], buffers["deriv3"], 
+				size, dt
+			);
+		} else {
+			kernels["solve_plain_euler"]->evaluate(
+				cl::work_range(size), buffers["part0"], 
+				buffers["part1"], size, eps, dt
+			);
+		}
 		
 		cl::buffer_object *tmp = buffers["part0"];
 		buffers["part0"] = buffers["part1"];
 		buffers["part1"] = tmp;
 		
-		buffers["part0"]->load_data(clbuffer);
-		clLoadTex(clbuffer);
+		
+		// write result to gl texture
+		
+		kernels["write_gl_tex"]->evaluate(
+			cl::work_range(size), buffers["part0"],
+			image, size, maxts
+		);
 		
 		queue->flush();
 	}

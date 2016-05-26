@@ -88,3 +88,5 @@ kernels/export/particle.h
 kernels/opencl.h
 kernels/kernels.c
 source/opencl.hpp
+kernels/export/deriv.h
+kernels/gravity.h

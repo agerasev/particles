@@ -12,10 +12,80 @@
 #include "engine.hpp"
 #include "particle.hpp"
 
-//#include "solvercpu.hpp"
+#include "solvercpu.hpp"
 #include "solvergpu.hpp"
 //#include "solverhybrid.hpp"
 
+void distrib_galaxy(const int size, Particle *parts, std::function<float()> rand) {
+	float side = 2.0*pow(double(size), 1.0/2.0);
+	float nr = side/sqrt(2*M_PI);
+	float na = side*sqrt(2*M_PI);
+	
+	int ca = 0, cr = 1;
+	for(int i = 0; i < size; ++i) {
+		Particle p;
+		int cna = int(na*cr/nr);
+		
+		float a = 2*M_PI*float(ca)/cna;
+		float x = cr/nr*cos(a);
+		float y = cr/nr*sin(a);
+		float z = 0.0;
+		float l = sqrt(x*x + y*y + z*z);
+		
+		p.id = i;
+		
+		p.mass = 1e3/size;
+		p.rad = 5e-1/sqrt(size);
+		
+		p.pos = fvec3(x, y, z);
+		p.vel = 
+			0.1*fvec3(rand(), rand(), rand()) + 
+			0.6f*fvec3(-y, x, 0)*sqrt(l);
+		
+		p.color = fvec3(
+			x + 0.5, 
+			y + 0.5, 
+			1.0 - 0.5*(x + y + 1.0)
+		);
+		
+		parts[i] = p;
+		
+		ca += 1;
+		if(ca >= cna) {
+			cr += 1;
+			ca = 0;
+		}
+	}
+}
+
+void distrib_cube(const int size, Particle *parts, std::function<float()> rand) {
+	int side = round(pow(size, 1.0/3.0));
+	
+	for(int i = 0; i < size; ++i) {
+		Particle p;
+		
+		float x = float((i/side)/side)/side - 0.5;
+		float y = float((i/side)%side)/side - 0.5;
+		float z = float(i%side)/side - 0.5;
+		
+		p.id = i;
+		
+		p.mass = 1e3/size;
+		p.rad = 1e-0/sqrt(size);
+		
+		p.pos = fvec3(x, y, z);
+		p.vel = 
+			0.1*fvec3(rand(), rand(), rand());
+		
+		p.color = fvec3(
+			x + 0.5, 
+			y + 0.5, 
+			z + 0.5
+		);
+		
+		parts[i] = p;
+	}
+}
 
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
@@ -26,11 +96,9 @@ int main(int argc, char *argv[]) {
 	
 	GLBank bank;
 	//SolverCPU solver(size);
-	//SolverGPUGL solver(size, &bank);
-	SolverGPUCL solver(size); // 4 times faster than GL
+	SolverGPU solver(size);
 	//SolverHybrid solver(size, &bank);
 	solver.dt = 1e-2;
-	solver.steps = 1;
 	
 	Graphics gfx(&bank, &solver);
 	
@@ -46,46 +114,9 @@ int main(int argc, char *argv[]) {
 			return rand_dist(rand_engine);
 		};
 		
+		distrib_galaxy(size, parts.data(), rand);
+		//distrib_cube(size, parts.data(), rand);
 		
-		float side = 2.0*pow(double(size), 1.0/2.0);
-		float nr = side/sqrt(2*M_PI);
-		float na = side*sqrt(2*M_PI);
-		
-		int ca = 0, cr = 1;
-		for(int i = 0; i < size; ++i) {
-			Particle p;
-			int cna = int(na*cr/nr);
-			
-			float a = 2*M_PI*float(ca)/cna;
-			float x = cr/nr*cos(a);
-			float y = cr/nr*sin(a);
-			float z = 0.0;
-			float l = sqrt(x*x + y*y + z*z);
-			
-			p.id = i;
-			
-			p.mass = 1e3/size;
-			p.rad = 2e-1/sqrt(size);
-			
-			p.pos = fvec3(x, y, z);
-			p.vel = 
-				0.1*fvec3(rand(), rand(), rand()) + 
-				0.7f*fvec3(-y, x, 0.0)*sqrt(l);
-			
-			p.color = fvec3(
-				x + 0.5, 
-				y + 0.5, 
-				1.0 - 0.5*(x + y + 1.0)
-			);
-			
-			parts[i] = p;
-			
-			ca += 1;
-			if(ca >= cna) {
-				cr += 1;
-				ca = 0;
-			}
-		}
 		solver.load(parts.data());
 	}
 	
