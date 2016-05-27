@@ -75,7 +75,7 @@ public:
 		delete dprop;
 	}
 	
-	virtual void load(_Particle parts[]) override {
+	virtual void store(_Particle parts[]) override {
 		
 		float *buf = nullptr;
 		
@@ -86,12 +86,7 @@ public:
 		for(int i = 0; i < size; ++i) {
 			Particle pg;
 			const _Particle &pc = parts[i];
-			pg.mass = pc.mass;
-			pg.rad = pc.rad;
-			for(int j = 0; j < 3; ++j) {
-				pg.pos.data[j] = pc.pos.data()[j];
-				pg.vel.data[j] = pc.vel.data()[j];
-			}
+			pc.store(&pg);
 			part_store(&pg, i, buf);
 		}
 		buffers["part0"]->store_data(buf);

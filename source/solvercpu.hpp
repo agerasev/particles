@@ -41,7 +41,7 @@ private:
 		}
 	};
 	
-	typedef Branch<const PartBuf*> PBranch;
+	typedef _Branch<const PartBuf*> PBranch;
 	
 	PartBuf *parts;
 	
@@ -73,7 +73,7 @@ public:
 		printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
-	virtual void load(_Particle parts[]) {
+	virtual void store(_Particle parts[]) {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
@@ -109,7 +109,7 @@ public:
 		return (p->id != op->id)*(grav(p, op));// + elast(p, op));
 	}
 	
-	fvec3 attract(PartBuf *p, const Branch<const PartBuf*> *b) {
+	fvec3 attract(PartBuf *p, const _Branch<const PartBuf*> *b) {
 		float l = length(p->pos - b->barycenter);
 		if(b->size/l < gth) {
 			return grav_avg(p, b->barycenter, b->mass);

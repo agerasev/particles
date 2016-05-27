@@ -3,12 +3,86 @@
 #include <export/particle.h>
 #include <export/deriv.h>
 #include <gravity.h>
+#include <export/tree.h>
 
 float3 accel_plain(const int id, const Particle p0, global const float *psrc, const int size, const float eps) {
 	float3 acc = (float3)(0);
 	for(int i = 0; i < size; ++i) {
 		const Particle p1 = part_load(i, psrc);
 		acc += (id != i)*gravity(p0, p1, eps);
+	}
+	return acc;
+}
+
+#define GTH 0.1
+float3 accel_branch(
+	const int id, const Particle p, const int bptr, int *next, const float eps,
+	global const int *tree, global const int *tree_link, global const float *tree_data
+) {
+	float3 acc = (float3)(0, 0, 0);
+	*next = 0;
+	
+	Branch b = branch_load(0, tree + bptr);
+	if(b.count <= 0) {
+		return acc;
+	}
+	
+	BranchData bd = branch_data_load(0, tree_data + b.data);
+	float l = length(p.pos - bd.barycenter);
+	
+	if(bd.size/l < GTH) {
+		return gravity_avg(p, bd.barycenter, bd.mass, eps);
+	} else {
+		if(b.isleaf) {
+			
+			for(int i = 0; i < b.count; ++i) {
+				const int _id = (tree_link + b.link)[i];
+				global const float *pdata = tree_data + b.data + BRANCH_DATA_FSIZE + i*PART_FSIZE;
+				acc += (id != _id)*gravity(p, part_load(0, pdata), eps);
+			}
+		} else {
+			*next = true;
+		}
+	}
+	return acc;
+}
+
+#define RECD 32
+float3 accel_tree(
+	const int id, const Particle p, global const float *psrc, 
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const int size, const float eps
+) {
+	// recursion emulation
+	int2 stack[RECD];
+	int sptr = 0;
+	
+	int next;
+	float3 acc = accel_branch(id, p, 0, &next, eps, tree, tree_link, tree_data);
+	if(!next)
+		return acc;
+	
+	stack[0] = (int2)(0, 0);
+	
+	while(true) {
+		if(stack[sptr].y >= 8) {
+			sptr -= 1;
+			if(sptr < 0)
+				break;
+			continue;
+		}
+		int2 se = stack[sptr];
+		Branch b = branch_load(0, tree + se.x);
+		global const int *link = tree_link + b.link;
+		int bptr = link[se.y];
+		acc += accel_branch(id, p, bptr, &next, eps, tree, tree_link, tree_data);
+		stack[sptr].y += 1;
+		if(next) {
+			sptr += 1;
+			if(sptr >= RECD)
+				break;
+			stack[sptr] = (int2)(bptr, 0);
+		}
 	}
 	return acc;
 }
@@ -43,6 +117,21 @@ kernel void solve_plain_rk4_d(global const float *psrc, global float *deriv, con
 	d.vel = accel_plain(id, p, psrc, size, eps);
 	
 	deriv_store(&d, id, deriv);
+}
+
+kernel void solve_tree_euler(
+	global const float *psrc, global float *pdst, 
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const int size, const float eps, const float dt
+) {
+	const int id = get_global_id(0);
+	
+	Particle p = part_load(id, psrc);
+	
+	p.pos = p.pos + dt*p.vel;
+	p.vel = p.vel + dt*accel_tree(id, p, psrc, tree, tree_link, tree_data, size, eps);
+	
+	part_store(&p, id, pdst);
 }
 
 kernel void solve_rk4_v_1_2(global const float *psrc, global float *pdst, global const float *deriv_1_2, const int size, const float dt) {

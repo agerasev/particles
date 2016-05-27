@@ -14,7 +14,7 @@
 
 #include "solvercpu.hpp"
 #include "solvergpu.hpp"
-//#include "solverhybrid.hpp"
+#include "solverhybrid.hpp"
 
 double clamp(double a) {
 	if(a < 0.0)
@@ -100,13 +100,14 @@ int main(int argc, char *argv[]) {
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 8*1024;
+	const int size = 256*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);
-	SolverGPU solver(size);
-	//SolverHybrid solver(size, &bank);
+	//SolverGPU solver(size);
+	SolverHybrid solver(size);
 	solver.dt = 1e-2;
+	solver.rk4 = false;
 	
 	Graphics gfx(&bank, &solver);
 	
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
 		distrib_galaxy(size, parts.data(), rand);
 		//distrib_cube(size, parts.data(), rand);
 		
-		solver.load(parts.data());
+		solver.store(parts.data());
 	}
 	
 	engine.loop();

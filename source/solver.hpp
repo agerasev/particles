@@ -20,8 +20,8 @@ public:
 	float gth = 0.1;
 	float eps = 1e0;
 	
-	float tree_size = 16.0;
-	int tree_depth = 16;
+	float tree_size = 32.0;
+	int tree_depth = 32;
 	
 	int maxts = 0;
 	
@@ -42,7 +42,7 @@ public:
 	}
 	virtual ~Solver() = default;
 	
-	virtual void load(_Particle parts[]) = 0;
+	virtual void store(_Particle parts[]) = 0;
 	virtual void solve(float dt) = 0;
 	void solve() {
 		solve(dt);

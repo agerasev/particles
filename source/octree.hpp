@@ -3,7 +3,7 @@
 #include <la/vec.hpp>
 
 template <typename T>
-class Branch {
+class _Branch {
 public:
 	fvec3 center;
 	float size;
@@ -14,17 +14,17 @@ public:
 	
 	std::vector<T> buffer;
 	
-	Branch *next[8] = {nullptr};
+	_Branch *next[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 	
 	fvec3 barycenter;
 	float mass;
 	int count = 0;
 	
-	Branch(fvec3 center, float size, int depth) 
+	_Branch(fvec3 center, float size, int depth) 
 	: center(center), size(size), depth(depth) {
 		buffer.reserve(max);
 	}
-	~Branch() {
+	~_Branch() {
 		if(!leaf) {
 			for(int i = 0; i < 8; ++i) {
 				delete next[i];
@@ -38,7 +38,7 @@ public:
 			for(int j = 0; j < 3; ++j) {
 				dir[j] = ((i >> j) & 1) - 0.5;
 			}
-			next[i] = new Branch<T>(
+			next[i] = new _Branch<T>(
 				center + dir*size,
 				0.5*size, depth - 1
 			);

@@ -2,9 +2,20 @@
 
 #include <opencl.h>
 
+#include <export/particle.h>
+
+#define G_CONST 1e-4f
+
 float3 gravity(const Particle p0, const Particle p1, const float eps) {
 	float3 r = p0.pos - p1.pos;
 	float e = eps*(p0.rad + p1.rad);
 	float l = sqrt(dot(r,r) + e*e);
-	return -1e-4f*p1.mass*r/(l*l*l);
+	return -G_CONST*p1.mass*r/(l*l*l);
+}
+
+float3 gravity_avg(const Particle p, const float3 pos, const float mass, const float eps) {
+	float3 r = p.pos - pos;
+	float e = eps*p.rad;
+	float l = sqrt(dot(r,r) + e*e);
+	return -G_CONST*mass*r/(l*l*l);
 }
