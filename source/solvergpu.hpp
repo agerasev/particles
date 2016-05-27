@@ -15,7 +15,7 @@
 #include <export/deriv.h>
 
 class SolverGPU : public Solver {
-private:
+protected:
 	cl::session *session;
 	cl::queue *queue;
 	
@@ -75,15 +75,17 @@ public:
 		delete dprop;
 	}
 	
-	virtual void load(Particle parts[]) override {
+	virtual void load(_Particle parts[]) override {
+		
+		float *buf = nullptr;
 		
 		// load to cl buffer
 		
-		float *buf = new float[PART_FSIZE*size];
+		buf = new float[PART_FSIZE*size];
 		
 		for(int i = 0; i < size; ++i) {
-			Part pg;
-			const Particle &pc = parts[i];
+			Particle pg;
+			const _Particle &pc = parts[i];
 			pg.mass = pc.mass;
 			pg.rad = pc.rad;
 			for(int j = 0; j < 3; ++j) {
@@ -99,8 +101,10 @@ public:
 		
 		// load to gl texture
 		
+		buf = new float[4*ps*size];
+		
 		for(int i = 0; i < size; ++i) {
-			Particle &p = parts[i];
+			_Particle &p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.rad;
 			buf[4*(i*ps + 0) + 1] = 0.0f;
@@ -118,6 +122,8 @@ public:
 			buf, nullivec2.data(), split_size(size*ps).data(), 
 			gl::Texture::RGBA, gl::FLOAT
 		);
+		
+		delete[] buf;
 	}
 	
 	virtual void solve(float dt) override {

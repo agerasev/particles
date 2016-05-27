@@ -90,3 +90,4 @@ kernels/kernels.c
 source/opencl.hpp
 kernels/export/deriv.h
 kernels/gravity.h
+kernels/export/tree.h

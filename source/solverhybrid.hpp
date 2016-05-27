@@ -11,11 +11,7 @@
 
 class SolverHybrid : public SolverGPU {
 private:
-	Particle *parts;
-	
-	gl::Texture tree;
-	gl::Texture tree_link;
-	gl::Texture tree_data;
+	Particle *parts = nullptr;
 	
 	int *tree_buffer = nullptr;
 	int *tree_link_buffer = nullptr;
@@ -26,11 +22,11 @@ private:
 		tls = 2, // tree_link entry size
 		tds = 2; // tree_data entry size
 	
-	typedef Branch<const Particle*> PBranch;
+	typedef Branch<const _Particle*> PBranch;
 	
 public:
 	SolverHybrid(int size, GLBank *bank) : SolverGPU(size, bank) {
-		parts = new Particle[size];
+		parts = new _Particle[size];
 		
 		ivec2 texs;
 		texs = split_size(tree_depth*size*ts);
@@ -52,7 +48,7 @@ public:
 		delete[] parts;
 	}
 	
-	virtual void load(Particle parts[]) {
+	virtual void load(_Particle parts[]) {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
@@ -63,7 +59,7 @@ public:
 	virtual void solve(float dt, int steps = 1) override {
 		downloadTex();
 		
-		Branch<const Particle*> trunk(nullfvec3, tree_size, tree_depth);
+		Branch<const _Particle*> trunk(nullfvec3, tree_size, tree_depth);
 		for(int i = 0; i < size; ++i) {
 			trunk.add(&parts[i]);
 		}
@@ -230,7 +226,7 @@ public:
 		dprop = dprops[0]->getTexture();
 	}
 	
-	int writeBranch(Branch<const Particle*> *b, int &pos, int &link_pos, int &data_pos) {
+	int writeBranch(Branch<const _Particle*> *b, int &pos, int &link_pos, int &data_pos) {
 		int selfpos = pos;
 		int *sb = tree_buffer + 4*pos;
 		pos += 1;
@@ -253,7 +249,7 @@ public:
 			sb[2] = 1;
 			
 			for(int i = 0; i < int(b->buffer.size()); ++i) {
-				const Particle *p = b->buffer[i];
+				const _Particle *p = b->buffer[i];
 				float *data = tree_data_buffer + 4*data_pos;
 				data_pos += 2;
 				data[0] = p->pos.x();
@@ -278,7 +274,7 @@ public:
 		return selfpos;
 	}
 	
-	void loadTree(Branch<const Particle*> *trunk) {
+	void loadTree(Branch<const _Particle*> *trunk) {
 		int pos = 0, link_pos = 0, data_pos = 0;
 		writeBranch(trunk, pos, link_pos, data_pos);
 		tree.write(
@@ -300,7 +296,7 @@ public:
 		
 		sprop->read(buf, gl::Texture::RGBA, gl::Type::FLOAT);
 		for(int i = 0; i < size; ++i) {
-			Particle &p = parts[i];
+			_Particle &p = parts[i];
 	
 			p.rad  = buf[4*(i*ps + 0) + 0];
 			p.mass = buf[4*(i*ps + 0) + 3];
@@ -313,7 +309,7 @@ public:
 		
 		dprop->read(buf, gl::Texture::RGBA, gl::Type::FLOAT);
 		for(int i = 0; i < size; ++i) {
-			Particle &p = parts[i];
+			_Particle &p = parts[i];
 
 			//position
 			p.pos.x() = buf[4*(i*ps + 0) + 0];

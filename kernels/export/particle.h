@@ -10,10 +10,10 @@ typedef struct {
 	float3 vel;
 	float mass;
 	float rad;
-} Part;
+} Particle;
 
-Part part_load(int offset, __global const float *part_data) {
-	Part part;
+Particle part_load(int offset, __global const float *part_data) {
+	Particle part;
 	__global const float *fdata = part_data + offset*PART_FSIZE;
 	part.pos = vload3(0, fdata);
 	part.vel = vload3(1, fdata);
@@ -22,7 +22,7 @@ Part part_load(int offset, __global const float *part_data) {
 	return part;
 }
 
-void part_store(Part *part, int offset, __global float *part_data) {
+void part_store(Particle *part, int offset, __global float *part_data) {
 	__global float *fdata = part_data + offset*PART_FSIZE;
 	vstore3(part->pos, 0, fdata);
 	vstore3(part->vel, 1, fdata);

@@ -13,9 +13,9 @@
 
 class SolverCPU : public Solver {
 private:
-	class PartBuf : public Particle {
+	class PartBuf : public _Particle {
 	private:
-		void _copy(const Particle &p) {
+		void _copy(const _Particle &p) {
 			color = p.color;
 			mass = p.mass;
 			rad = p.rad;
@@ -32,10 +32,10 @@ private:
 		fvec3 dpos[bufs], dvel[bufs];
 		
 		PartBuf() = default;
-		PartBuf(const Particle &p) {
+		PartBuf(const _Particle &p) {
 			_copy(p);
 		}
-		PartBuf &operator = (const Particle &p) {
+		PartBuf &operator = (const _Particle &p) {
 			_copy(p);
 			return *this;
 		}
@@ -73,7 +73,7 @@ public:
 		printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
-	virtual void load(Particle parts[]) {
+	virtual void load(_Particle parts[]) {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
@@ -209,7 +209,7 @@ public:
 		float *buf = buffer;
 		
 		for(int i = 0; i < size; ++i) {
-			Particle &p = parts[i];
+			_Particle &p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.rad;
 			buf[4*(i*ps + 0) + 1] = 0.0f;
@@ -229,7 +229,7 @@ public:
 		);
 		
 		for(int i = 0; i < size; ++i) {
-			Particle &p = parts[i];
+			_Particle &p = parts[i];
 
 			//position
 			buf[4*(i*ps + 0) + 0] = p.pos.x();

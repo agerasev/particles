@@ -6,8 +6,9 @@ uniform mat4 u_view;
 uniform mat4 u_proj;
 
 out vec2 vf_coord;
-out float vf_shadow;
+flat out float vf_rad;
 flat out int vf_id;
+
 
 void main() {
 	int id = gl_VertexID/4;
@@ -28,8 +29,10 @@ void main() {
 		dir.x = 1.0;
 	}
 	
+	vec4 view_pos = u_view*pos;
+	vf_rad = -rad/view_pos.z;
+	
 	vf_id = id;
 	vf_coord = dir;
-	vf_shadow = 1.0 - 0.2*float(vc/2);
-	gl_Position = u_proj*(u_view*pos + vec4(rad*dir, 0, 0));
+	gl_Position = u_proj*(view_pos + vec4(rad*dir, 0, 0));
 }

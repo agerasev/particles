@@ -16,37 +16,46 @@
 #include "solvergpu.hpp"
 //#include "solverhybrid.hpp"
 
-void distrib_galaxy(const int size, Particle *parts, std::function<float()> rand) {
+double clamp(double a) {
+	if(a < 0.0)
+		return 0.0;
+	if(a > 1.0)
+		return 1.0;
+	return a;
+}
+
+void distrib_galaxy(const int size, _Particle *parts, std::function<float()> rand) {
 	float side = 2.0*pow(double(size), 1.0/2.0);
 	float nr = side/sqrt(2*M_PI);
 	float na = side*sqrt(2*M_PI);
 	
 	int ca = 0, cr = 1;
 	for(int i = 0; i < size; ++i) {
-		Particle p;
+		_Particle p;
 		int cna = int(na*cr/nr);
 		
 		float a = 2*M_PI*float(ca)/cna;
-		float x = cr/nr*cos(a);
-		float y = cr/nr*sin(a);
+		float r = cr/nr;
+		float x = r*cos(a);
+		float y = r*sin(a);
 		float z = 0.0;
 		float l = sqrt(x*x + y*y + z*z);
 		
 		p.id = i;
 		
 		p.mass = 1e3/size;
-		p.rad = 5e-1/sqrt(size);
+		p.rad = 1e0/sqrt(size);
 		
 		p.pos = fvec3(x, y, z);
 		p.vel = 
 			0.1*fvec3(rand(), rand(), rand()) + 
-			0.6f*fvec3(-y, x, 0)*sqrt(l);
+			0.7f*fvec3(-y, x, 0)*sqrt(l);
 		
-		p.color = fvec3(
-			x + 0.5, 
-			y + 0.5, 
-			1.0 - 0.5*(x + y + 1.0)
-		);
+		float _a = 3*a/M_PI;
+		float _r = clamp(2 - fabs((_a > 3 ? _a - 6 : _a)));
+		float _g = clamp(2 - fabs(_a - 2));
+		float _b = clamp(2 - fabs(_a - 4));
+		p.color = (clamp(1 - 2*r) + 0.1)*fvec3(1, 1, 1) + clamp(2*r)*fvec3(_r, _g, _b);
 		
 		parts[i] = p;
 		
@@ -58,11 +67,11 @@ void distrib_galaxy(const int size, Particle *parts, std::function<float()> rand
 	}
 }
 
-void distrib_cube(const int size, Particle *parts, std::function<float()> rand) {
+void distrib_cube(const int size, _Particle *parts, std::function<float()> rand) {
 	int side = round(pow(size, 1.0/3.0));
 	
 	for(int i = 0; i < size; ++i) {
-		Particle p;
+		_Particle p;
 		
 		float x = float((i/side)/side)/side - 0.5;
 		float y = float((i/side)%side)/side - 0.5;
@@ -74,8 +83,7 @@ void distrib_cube(const int size, Particle *parts, std::function<float()> rand) 
 		p.rad = 1e-0/sqrt(size);
 		
 		p.pos = fvec3(x, y, z);
-		p.vel = 
-			0.1*fvec3(rand(), rand(), rand());
+		p.vel = 0.1*fvec3(rand(), rand(), rand());
 		
 		p.color = fvec3(
 			x + 0.5, 
@@ -92,7 +100,7 @@ int main(int argc, char *argv[]) {
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 16*1024;
+	const int size = 8*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);
@@ -106,7 +114,7 @@ int main(int argc, char *argv[]) {
 	engine.setSolver(&solver);
 	
 	{
-		std::vector<Particle> parts(size);
+		std::vector<_Particle> parts(size);
 		
 		std::minstd_rand rand_engine;
 		std::uniform_real_distribution<> rand_dist(-0.5, 0.5);

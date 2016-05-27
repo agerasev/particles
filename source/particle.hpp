@@ -2,7 +2,7 @@
 
 #include <la/vec.hpp>
 
-class Particle {
+class _Particle {
 public:
 	int id;
 	

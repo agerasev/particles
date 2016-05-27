@@ -97,9 +97,11 @@ public:
 	: bank(bank), solver(solver) {
 		view.update();
 		
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LEQUAL);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glPointSize(2);
+		//glEnable(GL_DEPTH_TEST);
+		//glDepthFunc(GL_LEQUAL);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
 		glEnable(GL_BLEND);
 		glClearColor(0.0f,0.0f,0.0f,1.0f);
 	}
@@ -129,7 +131,11 @@ public:
 		
 		gl::Program *prog = nullptr;
 		
+		float f = 4;
+		
 		prog = bank->progs["draw-point"];
+		prog->setUniform("u_wh", ivec2(width, height).data(), 2);
+		prog->setUniform("u_f", f);
 		prog->setUniform("u_proj", proj.mat.data(), 16);
 		prog->setUniform("u_view", view.mat.data(), 16);
 		prog->setUniform("u_sprop", solver->sprop);
@@ -138,6 +144,8 @@ public:
 		prog->evaluate(GL_POINTS, 0, solver->size);
 		
 		prog = bank->progs["draw-quad"];
+		prog->setUniform("u_h", height);
+		prog->setUniform("u_f", f);
 		prog->setUniform("u_proj", proj.mat.data(), 16);
 		prog->setUniform("u_view", view.mat.data(), 16);
 		prog->setUniform("u_sprop", solver->sprop);
