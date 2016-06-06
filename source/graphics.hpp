@@ -18,6 +18,18 @@
 #include <la/vec.hpp>
 #include <la/mat.hpp>
 
+#ifndef M_PI
+#define M_PI 3.1415
+#endif // M_PI
+
+#ifndef M_PI_2
+#define M_PI_2 (M_PI/2)
+#endif // M_PI_2
+
+#ifndef M_PI_4
+#define M_PI_4 (M_PI/4)
+#endif // M_PI_4
+
 class Proj {
 public:
 	float f = 1e4, n = 1e-2;

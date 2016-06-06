@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
 
 #include <vector>
@@ -17,6 +18,7 @@
 #include "solverhybrid.hpp"
 
 int main(int argc, char *argv[]) {
+	fprintf(stderr, "engine ...\n");
 	Engine engine(800, 800);
 	
 	const int size = 2*1024 - 19; 
@@ -24,9 +26,11 @@ int main(int argc, char *argv[]) {
 	//const int size = 16*1024;
 	
 	GLBank bank;
+	
 	//SolverCPU solver(size);
-	//SolverGPU solver(size, &bank);  // better for N < 64k
-	SolverHybrid solver(size, &bank);  // better for N > 64k
+	SolverGPU solver(size, &bank);
+	//SolverHybrid solver(size, &bank);
+	
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	
