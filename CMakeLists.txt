@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(voxie)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -fpermissive")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11 -fopenmp")
 
 set(SOURCE "")

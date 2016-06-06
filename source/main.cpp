@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
 
 #include <vector>
@@ -17,17 +18,22 @@
 #include "solverhybrid.hpp"
 
 int main(int argc, char *argv[]) {
+	fprintf(stderr, "engine ...\n");
 	Engine engine(800, 800);
 	
-	const int size = 1024;
+	const int size = 2*1024;
 	
+	fprintf(stderr, "glbank ...\n");
 	GLBank bank;
-	SolverCPU solver(size);
-	//SolverGPU solver(size, &bank);
+	
+	fprintf(stderr, "solver ...\n");
+	//SolverCPU solver(size);
+	SolverGPU solver(size, &bank);
 	//SolverHybrid solver(size, &bank);
 	solver.dt = 1e-2;
 	solver.steps = 1;
 	
+	fprintf(stderr, "graphics ...\n");
 	Graphics gfx(&bank, &solver);
 	
 	engine.setGraphics(&gfx);
