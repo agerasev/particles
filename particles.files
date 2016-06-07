@@ -28,7 +28,6 @@ shaders/draw-quad.frag
 shaders/draw-quad.vert
 source/solver.hpp
 shaders/fill.vert
-shaders/solve-plain-euler.frag
 libgl4u/c-includer/includer.hpp
 shaders/property.glsl
 libgl4u/c-includer/defs/opencl.h
@@ -41,18 +40,8 @@ source/particle.hpp
 source/glbank.hpp
 shaders/draw-point.vert
 shaders/draw-point.frag
-shaders/solve-tree-euler.frag
 source/solverhybrid.hpp
 source/octree.hpp
-shaders/gravity.glsl
-shaders/solve-rk4-v-1-2.frag
-shaders/solve-rk4-v-3.frag
-shaders/solve-rk4-v-4.frag
-shaders/solve-plain-rk4-d.frag
-shaders/solve-main.glsl
-shaders/solve-head.glsl
-shaders/tree.glsl
-shaders/solve-tree-rk4-d.frag
 libcl4u/c-includer/includer.hpp
 libcl4u/c-includer/opencl.h
 libcl4u/include/cl/buffer_object.hpp
@@ -91,3 +80,4 @@ source/opencl.hpp
 kernels/export/deriv.h
 kernels/gravity.h
 kernels/export/tree.h
+shaders/copy.frag

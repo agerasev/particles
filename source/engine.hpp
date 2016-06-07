@@ -16,6 +16,10 @@ private:
 	Solver *solver = nullptr;
 	
 	bool hold = false;
+	
+	int counter = 0;
+	bool video = true;
+	SDL_Surface *image;
 
 public:
 	Engine(int w, int h) {
@@ -57,8 +61,12 @@ public:
 			fprintf(stderr, "OpenGL 3.0 support not found\n");
 			exit(1);
 		}
+		
+		image = SDL_CreateRGBSurface(SDL_SWSURFACE,width,height,24,0x0000ff,0x00ff00,0xff0000,0x000000);
 	}
 	~Engine() {
+		SDL_FreeSurface(image);
+		
 		SDL_GL_DeleteContext(context);
 		
 		SDL_DestroyWindow(window);
@@ -101,6 +109,17 @@ public:
 			solver->solve();
 			gfx->render();
 			SDL_GL_SwapWindow(window);
+			
+			if(video) {
+				char num[21];
+				sprintf(num,"video/frame%05d.bmp", counter);
+				num[20] = '\0';
+				++counter;
+				glBindTexture(GL_TEXTURE_2D, gfx->screen.getTexture()->id());
+				glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,image->pixels);
+				SDL_SaveBMP(image,num);
+				glBindTexture(GL_TEXTURE_2D, 0);
+			}
 		}
 	}
 	

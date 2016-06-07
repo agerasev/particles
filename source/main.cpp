@@ -44,7 +44,7 @@ void distrib_galaxy(const int size, _Particle *parts, std::function<float()> ran
 		p.id = i;
 		
 		p.mass = 1e3/size;
-		p.rad = 1e0/sqrt(size);
+		p.rad = 2e0/sqrt(size);
 		
 		p.pos = fvec3(x, y, z);
 		p.vel = 
@@ -96,7 +96,7 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 }
 
 int main(int argc, char *argv[]) {
-	Engine engine(800, 800);
+	Engine engine(1920, 1080);
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;

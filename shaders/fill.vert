@@ -1,4 +1,8 @@
-#include <head.glsl>
+#version 130
+
+#include <defs.glsl>
+
+out vec2 vf_pos;
 
 void main(void) {
 	vec2 pos = vec2(0.0, 0.0);
@@ -13,5 +17,6 @@ void main(void) {
 	} else if(id == 0 || id == 3) {
 		pos.x = 1.0;
 	}
+	vf_pos = pos;
     gl_Position = vec4(pos, 0.0, 1.0);
 }

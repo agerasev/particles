@@ -93,8 +93,12 @@ private:
 	int width = 0, height = 0;
 	
 public:
+	gl::FrameBuffer screen;
+	
+public:
 	Graphics(GLBank *bank, Solver *solver)
 	: bank(bank), solver(solver) {
+		
 		view.update();
 		
 		glPointSize(2);
@@ -122,15 +126,17 @@ public:
 		width = w;
 		height = h;
 		proj.update(width, height);
+		screen.init(gl::Texture::RGBA8, width, height);
 	}
 	
 	void render() {
-		gl::FrameBuffer::unbind();
-		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
 		gl::Program *prog = nullptr;
 		
+		// render to framebuffer
+		
+		screen.bind();
+		glViewport(0, 0, width, height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		float f = 4;
 		
 		prog = bank->progs["draw-point"];
@@ -152,6 +158,16 @@ public:
 		prog->setUniform("u_dprop", solver->dprop);
 		prog->setUniform("MAXTS", solver->maxts);
 		prog->evaluate(GL_QUADS, 0, 4*solver->size);
+		
+		// render to screen
+		
+		gl::FrameBuffer::unbind();
+		glViewport(0, 0, width, height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		prog = bank->progs["copy"];
+		prog->setUniform("u_src", screen.getTexture());
+		prog->evaluate(GL_QUADS, 0, 4);
 		
 		glFlush();
 		glFinish();

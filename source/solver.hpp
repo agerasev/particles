@@ -18,7 +18,7 @@ public:
 	float dt = 1e-2;
 	
 	float gth = 0.1;
-	float eps = 1e0;
+	float eps = 5e0;
 	
 	float tree_size = 32.0;
 	int tree_depth = 32;
