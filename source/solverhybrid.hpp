@@ -48,10 +48,6 @@ public:
 		delete[] tree_data_buffer;
 	}
 	
-	virtual void store(_Particle parts[]) {
-		SolverGPU::store(parts);
-	}
-	
 	void updateTree(cl::buffer_object *clbuf) {
 		load_cl_parts(clbuf, parts.data());
 		

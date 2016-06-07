@@ -104,18 +104,16 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 #include <cl/device.hpp>
 
 int main(int argc, char *argv[]) {
-	Engine engine(800, 800);
+	Engine engine(800, 800); //, Engine::RECORD);
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 16*1024;
+	const int size = 256*1024;
 	
 	GLBank bank;
 	
 	int features = 0;
-#ifdef __gnu_linux__
 	features |= SolverGPU::INTEROP;	
-#endif
 	//features |= Solver::RK4;
 	
 	//SolverCPU

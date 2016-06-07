@@ -101,11 +101,11 @@ public:
 		delete dprop;
 	}
 	
-	void store_gls(_Particle parts[]) {
+	void store_gls(const _Particle parts[]) {
 		float *buf = gl_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
-			_Particle &p = parts[i];
+			const _Particle &p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.rad;
 			buf[4*(i*ps + 0) + 1] = 0.0f;
@@ -124,7 +124,7 @@ public:
 		);
 	}
 	
-	void store_gld(_Particle parts[]) {
+	void store_gld(const _Particle parts[]) {
 		float *buf = gl_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
@@ -147,7 +147,7 @@ public:
 		);
 	}
 	
-	void store_cl_parts(cl::buffer_object *clbuf, _Particle parts[]) {
+	void store_cl_parts(cl::buffer_object *clbuf, const _Particle parts[]) {
 		float *buf = parts_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
@@ -172,13 +172,17 @@ public:
 		}
 	}
 	
-	virtual void store(_Particle parts[]) override {
+	virtual void store(const _Particle parts[]) override {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
 		store_cl_parts(buffers["part0"], parts);
 		store_gls(parts);
 		store_gld(parts);
+	}
+	
+	virtual void load(_Particle parts[]) {
+		load_cl_parts(buffers["part0"], parts);
 	}
 	
 	void transfer_cl_to_gl() {

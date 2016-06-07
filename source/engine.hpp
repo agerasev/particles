@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdio>
+
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 
@@ -7,6 +9,10 @@
 #include "graphics.hpp"
 
 class Engine {
+public:
+	static const int
+		RECORD = (1 << 0);
+	
 private:
 	int width, height;
 	SDL_Window *window;
@@ -16,9 +22,13 @@ private:
 	Solver *solver = nullptr;
 	
 	bool hold = false;
+	
+	std::vector<_Particle> parts;
+	
+	int features = 0;
 
 public:
-	Engine(int w, int h) {
+	Engine(int w, int h, int features = 0) {
 		SDL_Init(SDL_INIT_VIDEO);
 		
 		width = w;
@@ -57,6 +67,8 @@ public:
 			fprintf(stderr, "OpenGL 3.0 support not found\n");
 			exit(1);
 		}
+		
+		this->features = features;
 	}
 	~Engine() {
 		SDL_GL_DeleteContext(context);
@@ -96,11 +108,85 @@ public:
 		return true;
 	}
 	
+	void save_dynamic(const std::string &name, Solver *s) {
+		FILE *file = fopen(name.c_str(), "wb");
+		if(!file) {
+			fprintf(stderr, "cannot open file %s\n", name.c_str());
+			return;
+		}
+		
+		for(int i = 0; i < s->size; ++i) {
+			_Particle p = parts[i];
+			float fvout[3]; 
+			for(int j = 0; j < 3; ++j)
+				fvout[j] = p.pos[j];
+			fwrite((void*) &fvout, sizeof(fvout), 1, file);
+			/*
+			for(int j = 0; j < 3; ++j)
+				fvout[j] = p.vel[j];
+			fwrite((void*) &fvout, sizeof(fvout), 1, file);
+			*/
+		}
+		
+		fclose(file);
+	}
+	
+	void save_static(const std::string &name, Solver *s) {
+		FILE *file = fopen(name.c_str(), "wb");
+		if(!file) {
+			fprintf(stderr, "cannot open file %s\n", name.c_str());
+			return;
+		}
+		
+		for(int i = 0; i < s->size; ++i) {
+			_Particle p = parts[i];
+			float fout;
+			float fvout[3]; 
+			fout = p.mass;
+			fwrite((void*) &fout, sizeof(fout), 1, file);
+			fout = p.rad;
+			fwrite((void*) &fout, sizeof(fout), 1, file);
+			for(int j = 0; j < 3; ++j)
+				fvout[j] = p.color[j];
+			fwrite((void*) &fvout, sizeof(fvout), 1, file);
+		}
+		
+		fclose(file);
+	}
+	
+	void save_meta(const std::string &name, Solver *s) {
+		FILE *file = fopen(name.c_str(), "wb");
+		if(!file) {
+			fprintf(stderr, "cannot open file %s\n", name.c_str());
+			return;
+		}
+		
+		int32_t iout;
+		
+		iout = 1; // version
+		fwrite((void*) &iout, sizeof(iout), 1, file);
+		iout = s->size; // size
+		fwrite((void*) &iout, sizeof(iout), 1, file);
+		
+		fclose(file);
+	}
+	
 	void loop() {
+		int counter = 0;
 		while(handle()) {
 			solver->solve();
+			
+			if(features & RECORD) {
+				char name[32];
+				snprintf(name, sizeof(name), "record/dyn%05d", counter); 
+				save_dynamic(name, solver);
+			}
+			
+			
 			gfx->render();
 			SDL_GL_SwapWindow(window);
+			
+			counter += 1;
 		}
 	}
 	
@@ -111,5 +197,11 @@ public:
 	
 	void setSolver(Solver *solver) {
 		this->solver = solver;
+		if(features & RECORD) {
+			parts.resize(solver->size);
+			solver->load(parts.data());
+			save_meta("record/meta", solver);
+			save_static("record/static", solver);
+		}
 	}
 };

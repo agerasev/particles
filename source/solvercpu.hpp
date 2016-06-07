@@ -73,9 +73,15 @@ public:
 		printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
-	virtual void store(_Particle parts[]) {
+	virtual void store(const _Particle parts[]) {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
+		}
+	}
+	
+	virtual void load(_Particle parts[]) {
+		for(int i = 0; i < size; ++i) {
+			parts[i] = this->parts[i];
 		}
 	}
 	

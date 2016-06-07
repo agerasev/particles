@@ -4,6 +4,7 @@
 #include <export/deriv.h>
 #include <gravity.h>
 #include <export/tree.h>
+#include <export/tree_depth.h>
 
 float3 accel_plain(const int id, const Particle p0, global const float *psrc, const int size, const float eps) {
 	float3 acc = (float3)(0);
@@ -47,7 +48,7 @@ float3 accel_branch(
 	return acc;
 }
 
-#define RECD 32
+#define RECD MAX_TREE_DEPTH
 float3 accel_tree(
 	const int id, const Particle p, global const float *psrc, 
 	global const int *tree, global const int *tree_link, global const float *tree_data,
