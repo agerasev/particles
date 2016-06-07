@@ -13,9 +13,6 @@
 
 class SolverHybrid : public SolverGPU {
 private:
-	_Particle *parts = nullptr;
-	float *parts_buffer = nullptr;
-	
 	int *tree_buffer = nullptr;
 	int *tree_link_buffer = nullptr;
 	float *tree_data_buffer = nullptr;
@@ -24,10 +21,7 @@ private:
 	
 public:
 	SolverHybrid(int size) : SolverGPU(size) {
-		parts = new _Particle[size];
-		parts_buffer = new float[size*PART_FSIZE];
-		
-		cl_context context = session->get_context().get_cl_context();
+		cl_context context = session->get_context().id();
 		
 		int nbranch = 10*size;
 		int bs;
@@ -52,27 +46,14 @@ public:
 		delete[] tree_buffer;
 		delete[] tree_link_buffer;
 		delete[] tree_data_buffer;
-		delete[] parts;
-		delete[] parts_buffer;
 	}
 	
 	virtual void store(_Particle parts[]) {
-		for(int i = 0; i < size; ++i) {
-			this->parts[i] = parts[i];
-		}
 		SolverGPU::store(parts);
 	}
 	
-	void loadParts(cl::buffer_object *clbuf) {
-		clbuf->load_data(parts_buffer);
-		for(int i = 0; i < size; ++i) {
-			Particle p = part_load(i, parts_buffer);
-			parts[i].load(&p);
-		}
-	}
-	
 	void updateTree(cl::buffer_object *clbuf) {
-		loadParts(clbuf);
+		load_cl_parts(clbuf, parts.data());
 		
 		PBranch trunk(nullfvec3, tree_size, tree_depth);
 		for(int i = 0; i < size; ++i) {
@@ -107,11 +88,7 @@ public:
 		buffers["part1"] = tmp;
 		
 		// write result to gl texture
-		
-		kernels["write_gl_tex"]->evaluate(
-			cl::work_range(size), buffers["part0"],
-			image, size, maxts
-		);
+		transfer_cl_to_gl();
 		
 		queue->flush();
 	}

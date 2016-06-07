@@ -5,6 +5,10 @@
 #include <random>
 #include <functional>
 
+#define M_PI 3.1415
+#define M_PI_2 (0.5*M_PI)
+#define M_PI_4 (0.25*M_PI)
+
 #include <la/vec.hpp>
 
 #include "glbank.hpp"
@@ -95,12 +99,16 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 	}
 }
 
+#include <cl/session.hpp>
+#include <cl/platform.hpp>
+#include <cl/device.hpp>
+
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 256*1024;
+	const int size = 16*1024;
 	
 	GLBank bank;
 	//SolverCPU solver(size);

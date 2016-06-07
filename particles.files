@@ -59,7 +59,6 @@ libcl4u/include/cl/buffer_object.hpp
 libcl4u/include/cl/context.hpp
 libcl4u/include/cl/exception.hpp
 libcl4u/include/cl/gl_buffer_object.hpp
-libcl4u/include/cl/gl_context.hpp
 libcl4u/include/cl/gl_image_object.hpp
 libcl4u/include/cl/image_object.hpp
 libcl4u/include/cl/kernel.hpp
@@ -74,10 +73,8 @@ libcl4u/include/cl/session.hpp
 libcl4u/include/cl/utility.hpp
 libcl4u/include/cl/work_range.hpp
 libcl4u/source/buffer_object.cpp
-libcl4u/source/context.cpp
 libcl4u/source/exception.cpp
 libcl4u/source/kernel.cpp
-libcl4u/source/platform.cpp
 libcl4u/source/program.cpp
 libcl4u/source/proto_buffer_object.cpp
 libcl4u/source/queue.cpp
@@ -91,3 +88,4 @@ source/opencl.hpp
 kernels/export/deriv.h
 kernels/gravity.h
 kernels/export/tree.h
+libcl4u/include/cl/device.hpp
