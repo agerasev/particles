@@ -5,9 +5,9 @@
 #include <random>
 #include <functional>
 
-#define M_PI 3.1415
-#define M_PI_2 (0.5*M_PI)
-#define M_PI_4 (0.25*M_PI)
+#define _M_PI 3.14159265358979323846
+#define _M_PI_2 (0.5*_M_PI)
+#define _M_PI_4 (0.25*_M_PI)
 
 #include <la/vec.hpp>
 
@@ -30,15 +30,15 @@ double clamp(double a) {
 
 void distrib_galaxy(const int size, _Particle *parts, std::function<float()> rand) {
 	float side = 2.0*pow(double(size), 1.0/2.0);
-	float nr = side/sqrt(2*M_PI);
-	float na = side*sqrt(2*M_PI);
+	float nr = side/sqrt(2*_M_PI);
+	float na = side*sqrt(2*_M_PI);
 	
 	int ca = 0, cr = 1;
 	for(int i = 0; i < size; ++i) {
 		_Particle p;
 		int cna = int(na*cr/nr);
 		
-		float a = 2*M_PI*float(ca)/cna;
+		float a = 2*_M_PI*float(ca)/cna;
 		float r = cr/nr;
 		float x = r*cos(a);
 		float y = r*sin(a);
@@ -55,7 +55,7 @@ void distrib_galaxy(const int size, _Particle *parts, std::function<float()> ran
 			0.1*fvec3(rand(), rand(), rand()) + 
 			0.7f*fvec3(-y, x, 0)*sqrt(l);
 		
-		float _a = 3*a/M_PI;
+		float _a = 3*a/_M_PI;
 		float _r = clamp(2 - fabs((_a > 3 ? _a - 6 : _a)));
 		float _g = clamp(2 - fabs(_a - 2));
 		float _b = clamp(2 - fabs(_a - 4));
@@ -111,11 +111,19 @@ int main(int argc, char *argv[]) {
 	const int size = 16*1024;
 	
 	GLBank bank;
-	//SolverCPU solver(size);
-	//SolverGPU solver(size);
-	SolverHybrid solver(size);
+	
+	int features = 0;
+#ifdef __gnu_linux__
+	features |= SolverGPU::INTEROP;	
+#endif
+	//features |= Solver::RK4;
+	
+	//SolverCPU
+	//SolverGPU
+	SolverHybrid 
+		solver(size, features);
+	
 	solver.dt = 1e-2;
-	solver.rk4 = false;
 	
 	Graphics gfx(&bank, &solver);
 	

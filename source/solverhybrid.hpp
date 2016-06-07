@@ -20,7 +20,7 @@ private:
 	typedef _Branch<const _Particle*> PBranch;
 	
 public:
-	SolverHybrid(int size) : SolverGPU(size) {
+	SolverHybrid(int size, int features) : SolverGPU(size, features) {
 		cl_context context = session->get_context().id();
 		
 		int nbranch = 10*size;
@@ -69,7 +69,7 @@ public:
 		// solve
 		
 		/*
-		if(rk4) {
+		if(features & RK4) {
 			
 		} else {
 			

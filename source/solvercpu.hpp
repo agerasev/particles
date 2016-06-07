@@ -52,7 +52,7 @@ private:
 	int n_tree = 0, n_grav = 0;
 	
 public:
-	SolverCPU(int size) : Solver(size) {
+	SolverCPU(int size, int features) : Solver(size, features) {
 		parts = new PartBuf[size];
 		sprop = new gl::Texture();
 		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);

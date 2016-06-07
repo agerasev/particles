@@ -89,3 +89,6 @@ kernels/export/deriv.h
 kernels/gravity.h
 kernels/export/tree.h
 libcl4u/include/cl/device.hpp
+libcl4u/include/cl/features.hpp
+libcl4u/source/platform.cpp
+libcl4u/source/device.cpp

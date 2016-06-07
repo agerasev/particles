@@ -9,12 +9,16 @@
 
 class Solver {
 public:
+	static const int
+	RK4 = (1 << 0);
+public:
 	const int size;
 	gl::Texture *sprop = nullptr;
 	gl::Texture *dprop = nullptr;
 	const int ps = 2;
 	
-	bool rk4 = true;
+	int features;
+	
 	float dt = 1e-2;
 	
 	float gth = 0.1;
@@ -36,7 +40,7 @@ public:
 		return ivec2(id%maxts, id/maxts);
 	}
 	
-	Solver(int size) : size(size) {
+	Solver(int size, int features) : size(size), features(features) {
 		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxts);
 		printf("GL_MAX_TEXTURE_SIZE: %d\n", maxts);
 	}

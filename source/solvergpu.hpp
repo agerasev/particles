@@ -15,6 +15,9 @@
 #include <export/deriv.h>
 
 class SolverGPU : public Solver {
+public:
+	static const int
+	INTEROP = (1 << (16 + 0));
 protected:
 	cl::session *session;
 	cl::queue *queue;
@@ -26,7 +29,6 @@ protected:
 	cl::map<cl::kernel*> kernels;
 	
 	ivec2 texs;
-	bool interop = false;
 	
 	std::vector<float> gl_buffer;
 	
@@ -34,7 +36,7 @@ protected:
 	std::vector<float> parts_buffer;
 	
 public:
-	SolverGPU(const int size) : Solver(size) {
+	SolverGPU(const int size, int features) : Solver(size, features) {
 		texs = split_size(size*ps);
 		
 		parts.resize(size);
@@ -45,7 +47,11 @@ public:
 		dprop = new gl::Texture();
 		sprop->init(2, texs.data(), gl::Texture::RGBA32F);
 		
-		session = new cl::session(1);
+		int cl_features = 0;
+		if(features & INTEROP) {
+			cl_features |= cl::feature::GL_INTEROP;
+		}
+		session = new cl::session(1, cl_features);
 		queue = &session->get_queue();
 		
 		cl_context context = session->get_context().id();
@@ -60,7 +66,7 @@ public:
 			b->bind_queue(queue->get_cl_command_queue());
 		}
 		
-		if(interop) {
+		if(features & INTEROP) {
 			image = new cl::gl_image_object(context, texs.x(), texs.y());
 			image->bind_queue(queue->get_cl_command_queue());
 			dprop->wrap(image->get_texture(), 2, texs.data(), gl::Texture::RGBA32F);
@@ -176,7 +182,7 @@ public:
 	}
 	
 	void transfer_cl_to_gl() {
-		if(interop) {
+		if(features & INTEROP) {
 			kernels["write_gl_tex"]->evaluate(
 				cl::work_range(size), buffers["part0"],
 				image, size, maxts
@@ -191,7 +197,7 @@ public:
 		
 		// solve
 		
-		if(rk4) {
+		if(features & RK4) {
 			// stage 1
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part0"], 

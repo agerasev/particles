@@ -43,7 +43,7 @@ public:
 	float rad = 1.0f;
 	
 	float sens = 1e-2f;
-	float phi = 0.0f, theta = M_PI_4;
+	float phi = 0.0f, theta = _M_PI_4;
 	
 	fmat4 mat = unifmat4;
 	
@@ -68,10 +68,10 @@ public:
 	void spin(float dx, float dy) {
 		phi += sens*dx;
 		theta += sens*dy;
-		if(theta > M_PI_2 - eps)
-			theta = M_PI_2 - eps;
-		if(theta < -M_PI_2 + eps)
-			theta = -M_PI_2 + eps;
+		if(theta > _M_PI_2 - eps)
+			theta = _M_PI_2 - eps;
+		if(theta < -_M_PI_2 + eps)
+			theta = -_M_PI_2 + eps;
 	}
 	
 	void zoom(float dz) {
