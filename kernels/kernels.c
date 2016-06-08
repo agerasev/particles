@@ -135,6 +135,22 @@ kernel void solve_tree_euler(
 	part_store(&p, id, pdst);
 }
 
+kernel void solve_tree_rk4_d(
+	global const float *psrc, global float *deriv,
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const int size, const float eps
+) {
+	const int id = get_global_id(0);
+	
+	Deriv d;
+	Particle p = part_load(id, psrc);
+	
+	d.pos = p.vel;
+	d.vel = accel_tree(id, p, psrc, tree, tree_link, tree_data, size, eps);
+	
+	deriv_store(&d, id, deriv);
+}
+
 kernel void solve_rk4_v_1_2(global const float *psrc, global float *pdst, global const float *deriv_1_2, const int size, const float dt) {
 	const int id = get_global_id(0);
 	

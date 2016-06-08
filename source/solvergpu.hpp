@@ -23,7 +23,9 @@ protected:
 	cl::queue *queue;
 	
 	cl::map<cl::buffer_object*> buffers;
+#ifndef CL_NO_GL_INTEROP
 	cl::gl_image_object *image = nullptr;
+#endif
 	
 	cl::program *program;
 	cl::map<cl::kernel*> kernels;
@@ -65,12 +67,17 @@ public:
 		for(cl::buffer_object *b : buffers) {
 			b->bind_queue(queue->get_cl_command_queue());
 		}
-		
+	
+#ifndef CL_NO_GL_INTEROP
 		if(features & INTEROP) {
 			image = new cl::gl_image_object(context, texs.x(), texs.y());
 			image->bind_queue(queue->get_cl_command_queue());
 			dprop->wrap(image->get_texture(), 2, texs.data(), gl::Texture::RGBA32F);
+
 		} else {
+#else
+		{
+#endif
 			dprop->init(2, texs.data(), gl::Texture::RGBA32F);
 		}
 		
@@ -87,9 +94,11 @@ public:
 		
 		delete program;
 		
+#ifndef CL_NO_GL_INTEROP
 		if(image != nullptr) {
 			delete image;
 		}
+#endif
 		
 		for(cl::buffer_object *b : buffers) {
 			delete b;
@@ -186,12 +195,16 @@ public:
 	}
 	
 	void transfer_cl_to_gl() {
+#ifndef CL_NO_GL_INTEROP
 		if(features & INTEROP) {
 			kernels["write_gl_tex"]->evaluate(
 				cl::work_range(size), buffers["part0"],
 				image, size, maxts
 			);
 		} else {
+#else
+		{
+#endif
 			load_cl_parts(buffers["part0"], parts.data());
 			store_gld(parts.data());
 		}
@@ -222,7 +235,7 @@ public:
 				buffers["deriv1"], size, dt
 			);
 			
-			// stage 1
+			// stage 3
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], 
 				buffers["deriv2"], size, eps
@@ -232,7 +245,7 @@ public:
 				buffers["deriv2"], size, dt
 			);
 			
-			// stage 1
+			// stage 4
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], 
 				buffers["deriv3"], size, eps

@@ -83,20 +83,63 @@ public:
 		
 		// solve
 		
-		/*
 		if(features & RK4) {
+			// stage 1
+			updateTree(buffers["part0"]);
+			kernels["solve_tree_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["deriv0"], 
+				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
+				size, eps
+			);
+			kernels["solve_rk4_v_1_2"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv0"], size, dt
+			);
 			
+			// stage 2
+			updateTree(buffers["part1"]);
+			kernels["solve_tree_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], buffers["deriv1"], 
+				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
+				size, eps
+			);
+			kernels["solve_rk4_v_1_2"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv1"], size, dt
+			);
+			
+			// stage 3
+			updateTree(buffers["part1"]);
+			kernels["solve_tree_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], buffers["deriv2"], 
+				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
+				size, eps
+			);
+			kernels["solve_rk4_v_3"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv2"], size, dt
+			);
+			
+			// stage 4
+			updateTree(buffers["part1"]);
+			kernels["solve_tree_rk4_d"]->evaluate(
+				cl::work_range(size), buffers["part1"], buffers["deriv3"],  
+				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
+				size, eps
+			);
+			kernels["solve_rk4_v_4"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"], 
+				buffers["deriv0"], buffers["deriv1"], buffers["deriv2"], buffers["deriv3"], 
+				size, dt
+			);
 		} else {
-			
+			updateTree(buffers["part0"]);
+			kernels["solve_tree_euler"]->evaluate(
+				cl::work_range(size), buffers["part0"], buffers["part1"],
+				buffers["tree"], buffers["tree_link"], buffers["tree_data"], 
+				size, eps, dt
+			);
 		}
-		*/
-		updateTree(buffers["part0"]);
-		
-		kernels["solve_tree_euler"]->evaluate(
-			cl::work_range(size), buffers["part0"], buffers["part1"],
-			buffers["tree"], buffers["tree_link"], buffers["tree_data"], 
-			size, eps, dt
-		);
 		
 		cl::buffer_object *tmp = buffers["part0"];
 		buffers["part0"] = buffers["part1"];
