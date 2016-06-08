@@ -6,7 +6,6 @@
 
 #include "opencl.hpp"
 #include <export/particle.h>
-#include <export/tree_depth.h>
 
 class Solver {
 public:
@@ -24,9 +23,6 @@ public:
 	
 	float gth = 0.1;
 	float eps = 1e0;
-	
-	float tree_size = 32.0;
-	int tree_depth = MAX_TREE_DEPTH;
 	
 	int maxts = 0;
 	

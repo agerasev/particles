@@ -16,7 +16,7 @@
 #include "engine.hpp"
 #include "particle.hpp"
 
-#include "solvercpu.hpp"
+//#include "solvercpu.hpp"
 #include "solvergpu.hpp"
 #include "solverhybrid.hpp"
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 256*1024;
+	const int size = 16*1024;
 	
 	GLBank bank;
 	

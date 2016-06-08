@@ -9,10 +9,14 @@
 #include "particle.hpp"
 #include "octree.hpp"
 
+#include "opencl.h"
 #include <export/tree.h>
+#include <export/tree_depth.h>
 
 class SolverHybrid : public SolverGPU {
 private:
+	int tree_depth = MAX_TREE_DEPTH;
+	
 	int *tree_buffer = nullptr;
 	int *tree_link_buffer = nullptr;
 	float *tree_data_buffer = nullptr;
@@ -48,8 +52,23 @@ public:
 		delete[] tree_data_buffer;
 	}
 	
+	float getTreeSize() {
+		float ms = 0.0f;
+		for(int i = 0; i < size; ++i) {
+			for(int j = 0; j < 3; ++j) {
+				float ps = fabs(parts[i].pos[j]);
+				if(ps > ms) {
+					ms = ps;
+				} 
+			}
+		}
+		return size;
+	}
+	
 	void updateTree(cl::buffer_object *clbuf) {
 		load_cl_parts(clbuf, parts.data());
+		
+		float tree_size = getTreeSize();
 		
 		PBranch trunk(nullfvec3, tree_size, tree_depth);
 		for(int i = 0; i < size; ++i) {

@@ -8,7 +8,7 @@ public:
 	fvec3 center;
 	float size;
 	
-	static const int max = 8;
+	int max = 8;
 	bool leaf = true;
 	int depth;
 	
