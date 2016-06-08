@@ -108,12 +108,14 @@ int main(int argc, char *argv[]) {
 	
 	//const int size = 2*1024 - 19; 
 	//const int size = 4*1024 + 70;
-	const int size = 256*1024;
+	const int size = 64*1024;
 	
 	GLBank bank;
 	
 	int features = 0;
-	features |= SolverGPU::INTEROP;	
+#ifndef CL_NO_G_INTEROP
+	features |= SolverGPU::INTEROP;
+#endif
 	//features |= Solver::RK4;
 	
 	//SolverCPU
