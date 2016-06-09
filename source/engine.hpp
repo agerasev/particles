@@ -174,7 +174,14 @@ public:
 	void loop() {
 		int counter = 0;
 		while(handle()) {
+			printf("frame %d\n", counter);
+			fflush(stdout);
+			
+			Uint32 time = SDL_GetTicks();
 			solver->solve();
+			time = SDL_GetTicks() - time;
+			printf("solve time: %f sec\n", 1e-3*time);
+			fflush(stdout);
 			
 			if(features & RECORD) {
 				char name[32];

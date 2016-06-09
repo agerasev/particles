@@ -5,9 +5,7 @@
 #include <random>
 #include <functional>
 
-#define _M_PI 3.14159265358979323846
-#define _M_PI_2 (0.5*_M_PI)
-#define _M_PI_4 (0.25*_M_PI)
+#include "const.hpp"
 
 #include <la/vec.hpp>
 
@@ -48,7 +46,7 @@ void distrib_galaxy(const int size, _Particle *parts, std::function<float()> ran
 		p.id = i;
 		
 		p.mass = 1e3/size;
-		p.rad = 1e0/sqrt(size);
+		p.update();
 		
 		p.pos = fvec3(x, y, z);
 		p.vel = 
@@ -84,7 +82,7 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 		p.id = i;
 		
 		p.mass = 1e3/size;
-		p.rad = 1e-0/sqrt(size);
+		p.update();
 		
 		p.pos = fvec3(x, y, z);
 		p.vel = 0.1*fvec3(rand(), rand(), rand());
@@ -104,9 +102,9 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 #include <cl/device.hpp>
 
 int main(int argc, char *argv[]) {
-	Engine engine(800, 800); //, Engine::RECORD);
+	Engine engine(800, 800);//, Engine::RECORD);
 	
-	const int size = 256*1024;
+	const int size = 64*1024;
 	
 	GLBank bank;
 	
@@ -114,7 +112,7 @@ int main(int argc, char *argv[]) {
 #ifndef CL_NO_GL_INTEROP
 	features |= SolverGPU::INTEROP;
 #endif
-	//features |= Solver::RK4;
+	features |= Solver::RK4;
 	
 	//SolverGPU
 	SolverHybrid 

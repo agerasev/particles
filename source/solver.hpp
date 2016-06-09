@@ -12,7 +12,7 @@ public:
 	static const int
 	RK4 = (1 << 0);
 public:
-	const int size;
+	int size;
 	gl::Texture *sprop = nullptr;
 	gl::Texture *dprop = nullptr;
 	const int ps = 2;
@@ -22,7 +22,6 @@ public:
 	float dt = 1e-2;
 	
 	float gth = 0.1;
-	float eps = 1e0;
 	
 	int maxts = 0;
 	

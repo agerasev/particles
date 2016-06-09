@@ -63,40 +63,105 @@ public:
 				} 
 			}
 		}
-		return size;
+		
+		if(ms > max_tree_size) {
+			ms = max_tree_size;
+		}
+		
+		return ms;
+	}
+	
+	void buildTree(PBranch &trunk) {
+		for(int i = 0; i < size; ++i) {
+			trunk.add(&parts[i]);
+		}
+		trunk.update();
 	}
 	
 	void updateTree(cl::buffer_object *clbuf) {
 		load_cl_parts(clbuf, parts.data());
 		
-		float tree_size = getTreeSize();
-		if(tree_size > max_tree_size) {
-			tree_size = max_tree_size;
-		}
-		
-		PBranch trunk(nullfvec3, tree_size, max_tree_depth);
-		for(int i = 0; i < size; ++i) {
-			trunk.add(&parts[i]);
-		}
-		trunk.update();
+		PBranch trunk(nullfvec3, getTreeSize(), max_tree_depth);
+		buildTree(trunk);
 		
 		storeTree(&trunk);
 		
 		printf("tree min depth: %d\n", trunk.mindepth);
+		printf("tree max count: %d\n", trunk.maxcount);
 		fflush(stdout);
 	}
 	
+	void unite() {
+		load_cl_parts(buffers["part0"], parts.data());
+		
+		PBranch trunk(nullfvec3, getTreeSize(), max_tree_depth);
+		buildTree(trunk);
+		
+		int newsize = size;
+		for(int i = 0; i < size; ++i) {
+			_Particle &p = parts[i];
+			if(p.id >= 0) {
+				std::vector<const _Particle*> found;
+				trunk.intersect(found, p.pos, p.rad, 1e-2);
+				float newmass = p.mass;
+				fvec3 wpos = p.pos*p.mass;
+				fvec3 wvel = p.vel*p.mass; // momentum
+				for(const _Particle *cfp : found) {
+					if(cfp->id >= 0 && cfp->id != p.id) {
+						_Particle &fp = parts[cfp->id];
+						wpos += fp.pos*fp.mass;
+						wvel += fp.vel*fp.mass;
+						newmass += fp.mass;
+						fp.id = -1;
+						newsize -= 1;
+					}
+				}
+				p.pos = wpos/newmass;
+				p.vel = wvel/newmass;
+				p.mass = newmass;
+				p.update();
+			}
+		}
+		
+		if(size != newsize) {
+			int j = 0;
+			for(int i = 0; i < newsize; ++i) {
+				while(parts[j].id < 0) {
+					if(j >= size) {
+						fprintf(stderr, "compact error: j >= size\n");
+					}
+					j += 1;
+				}
+				parts[i] = parts[j];
+				parts[i].id = i;
+				j += 1;
+			}
+			
+			size = newsize;
+			
+			printf("particle new count: %d\n", size);
+			fflush(stdout);
+			
+			store(parts.data());
+		}
+	}
+	
 	virtual void solve(float dt) override {
+		printf("particle count: %d\n", size);
+		fflush(stdout);
+		
+		// unite
+		//unite();
 		
 		// solve
-		
+			
 		if(features & RK4) {
 			// stage 1
 			updateTree(buffers["part0"]);
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["deriv0"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
-				size, eps
+				size
 			);
 			kernels["solve_rk4_v_1_2"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -108,7 +173,7 @@ public:
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv1"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
-				size, eps
+				size
 			);
 			kernels["solve_rk4_v_1_2"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -120,7 +185,7 @@ public:
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv2"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
-				size, eps
+				size
 			);
 			kernels["solve_rk4_v_3"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -132,7 +197,7 @@ public:
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv3"],  
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
-				size, eps
+				size
 			);
 			kernels["solve_rk4_v_4"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -144,7 +209,7 @@ public:
 			kernels["solve_tree_euler"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"],
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"], 
-				size, eps, dt
+				size, dt
 			);
 		}
 		

@@ -218,7 +218,7 @@ public:
 			// stage 1
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part0"], 
-				buffers["deriv0"], size, eps
+				buffers["deriv0"], size
 			);
 			kernels["solve_rk4_v_1_2"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -228,7 +228,7 @@ public:
 			// stage 2
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], 
-				buffers["deriv1"], size, eps
+				buffers["deriv1"], size
 			);
 			kernels["solve_rk4_v_1_2"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -238,7 +238,7 @@ public:
 			// stage 3
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], 
-				buffers["deriv2"], size, eps
+				buffers["deriv2"], size
 			);
 			kernels["solve_rk4_v_3"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -248,7 +248,7 @@ public:
 			// stage 4
 			kernels["solve_plain_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], 
-				buffers["deriv3"], size, eps
+				buffers["deriv3"], size
 			);
 			kernels["solve_rk4_v_4"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"], 
@@ -258,7 +258,7 @@ public:
 		} else {
 			kernels["solve_plain_euler"]->evaluate(
 				cl::work_range(size), buffers["part0"], 
-				buffers["part1"], size, eps, dt
+				buffers["part1"], size, dt
 			);
 		}
 		

@@ -18,6 +18,10 @@ public:
 	fvec3 pos;
 	fvec3 vel;
 	
+	void update() {
+		rad = 2e-2*pow(mass, 1.0/3.0);
+	}
+	
 	void store(Particle *p) const {
 		p->mass = mass;
 		p->rad = rad;

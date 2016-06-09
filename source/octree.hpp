@@ -4,6 +4,8 @@
 
 #include <la/vec.hpp>
 
+#include "const.hpp"
+
 template <typename T>
 class _Branch {
 public:
@@ -14,7 +16,9 @@ public:
 	bool leaf = true;
 	int depth;
 	float minrad;
+	
 	int mindepth = 0;
+	int maxcount = 0;
 	
 	std::vector<T> buffer;
 	
@@ -28,7 +32,9 @@ public:
 	: center(center), size(size), depth(depth) {
 		buffer.reserve(max);
 		minrad = size;
+		
 		mindepth = depth;
+		maxcount = 0;
 	}
 	~_Branch() {
 		if(!leaf) {
@@ -87,17 +93,29 @@ public:
 	void update() {
 		barycenter = nullfvec3;
 		mass = 0.0f;
+		
 		if(!leaf) {
 			for(int i = 0; i < 8; ++i) {
 				next[i]->update();
+				
 				if(next[i]->mindepth < mindepth) {
 					mindepth = next[i]->mindepth;
 				}
+				if(next[i]->maxcount > maxcount) {
+					maxcount = next[i]->maxcount;
+				}
+				
 				barycenter += next[i]->barycenter*next[i]->mass;
 				mass += next[i]->mass;
 			}
 		}
+		
 		count = buffer.size();
+		
+		if(maxcount < count) {
+			maxcount = count;
+		}
+		
 		if(count > 0) {
 			for(int i = 0; i < int(buffer.size()); ++i) {
 				barycenter += buffer[i]->pos*buffer[i]->mass;
@@ -105,5 +123,21 @@ public:
 			}
 		}
 		barycenter /= mass;
+	}
+	
+	void intersect(std::vector<T> &found, const fvec3 &pos, float rad, float f = 1.0) {
+		if((_M_SQRT3 + 1)*size + rad > length(pos - center)) {
+			for(int i = 0; i < count; ++i) {
+				T p = buffer[i];
+				if(f*(p->rad + rad) > length(p->pos - pos)) {
+					found.push_back(p);
+				}
+			}
+			if(!leaf) {
+				for(int i = 0; i < 8; ++i) {
+					next[i]->intersect(found, pos, rad, f);
+				}
+			}
+		}
 	}
 };

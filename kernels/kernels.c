@@ -6,18 +6,18 @@
 #include <export/tree.h>
 #include <export/tree_depth.h>
 
-float3 accel_plain(const int id, const Particle p0, global const float *psrc, const int size, const float eps) {
+float3 accel_plain(const int id, const Particle p0, global const float *psrc, const int size) {
 	float3 acc = (float3)(0);
 	for(int i = 0; i < size; ++i) {
 		const Particle p1 = part_load(i, psrc);
-		acc += (id != i)*gravity(p0, p1, eps);
+		acc += (id != i)*gravity(p0, p1);
 	}
 	return acc;
 }
 
 #define GTH 0.1
 float3 accel_branch(
-	const int id, const Particle p, const int bptr, int *next, const float eps,
+	const int id, const Particle p, const int bptr, int *next,
 	global const int *tree, global const int *tree_link, global const float *tree_data
 ) {
 	float3 acc = (float3)(0, 0, 0);
@@ -28,19 +28,20 @@ float3 accel_branch(
 	BranchData bd = branch_data_load(0, tree_data + b.data);
 	float l = length(p.pos - bd.barycenter);
 	
-	if(!b.isleaf && bd.size/l < GTH) {
-		return gravity_avg(p, bd.barycenter, bd.mass, eps);
+	if(bd.size/l < GTH) {
+		acc += gravity_avg(p, bd.barycenter, bd.mass);
 	} else {
 		global const int *link = tree_link + b.link + (!b.isleaf)*8;
 		for(int i = 0; i < b.count; ++i) {
 			const int _id = link[i];
 			global const float *pdata = tree_data + b.data + BRANCH_DATA_FSIZE + i*PART_FSIZE;
-			acc += (id != _id)*gravity(p, part_load(0, pdata), eps);
+			acc += (id != _id)*gravity(p, part_load(0, pdata));
 		}
 		if(!b.isleaf) {
 			*next = 1;
 		}
 	}
+	
 	return acc;
 }
 
@@ -48,14 +49,14 @@ float3 accel_branch(
 float3 accel_tree(
 	const int id, const Particle p, global const float *psrc, 
 	global const int *tree, global const int *tree_link, global const float *tree_data,
-	const int size, const float eps
+	const int size
 ) {
 	// recursion emulation
 	int2 stack[RECD];
 	int sptr = 0;
 	
 	int next;
-	float3 acc = accel_branch(id, p, 0, &next, eps, tree, tree_link, tree_data);
+	float3 acc = accel_branch(id, p, 0, &next, tree, tree_link, tree_data);
 	if(!next)
 		return acc;
 	
@@ -72,7 +73,7 @@ float3 accel_tree(
 		Branch b = branch_load(0, tree + se.x);
 		global const int *link = tree_link + b.link;
 		int bptr = link[se.y];
-		acc += accel_branch(id, p, bptr, &next, eps, tree, tree_link, tree_data);
+		acc += accel_branch(id, p, bptr, &next, tree, tree_link, tree_data);
 		stack[sptr].y += 1;
 		if(next) {
 			sptr += 1;
@@ -93,25 +94,25 @@ void solve_step(const int id, global const float *psrc, global float *pdst, cons
 	part_store(&p, id, pdst);
 }
 
-kernel void solve_plain_euler(global const float *psrc, global float *pdst, const int size, const float eps, const float dt) {
+kernel void solve_plain_euler(global const float *psrc, global float *pdst, const int size, const float dt) {
 	const int id = get_global_id(0);
 	
 	Particle p = part_load(id, psrc);
 	
 	p.pos = p.pos + dt*p.vel;
-	p.vel = p.vel + dt*accel_plain(id, p, psrc, size, eps);
+	p.vel = p.vel + dt*accel_plain(id, p, psrc, size);
 	
 	part_store(&p, id, pdst);
 }
 
-kernel void solve_plain_rk4_d(global const float *psrc, global float *deriv, const int size, const float eps) {
+kernel void solve_plain_rk4_d(global const float *psrc, global float *deriv, const int size) {
 	const int id = get_global_id(0);
 	
 	Deriv d;
 	Particle p = part_load(id, psrc);
 	
 	d.pos = p.vel;
-	d.vel = accel_plain(id, p, psrc, size, eps);
+	d.vel = accel_plain(id, p, psrc, size);
 	
 	deriv_store(&d, id, deriv);
 }
@@ -119,14 +120,14 @@ kernel void solve_plain_rk4_d(global const float *psrc, global float *deriv, con
 kernel void solve_tree_euler(
 	global const float *psrc, global float *pdst, 
 	global const int *tree, global const int *tree_link, global const float *tree_data,
-	const int size, const float eps, const float dt
+	const int size, const float dt
 ) {
 	const int id = get_global_id(0);
 	
 	Particle p = part_load(id, psrc);
 	
 	p.pos = p.pos + dt*p.vel;
-	p.vel = p.vel + dt*accel_tree(id, p, psrc, tree, tree_link, tree_data, size, eps);
+	p.vel = p.vel + dt*accel_tree(id, p, psrc, tree, tree_link, tree_data, size);
 	
 	part_store(&p, id, pdst);
 }
@@ -134,7 +135,7 @@ kernel void solve_tree_euler(
 kernel void solve_tree_rk4_d(
 	global const float *psrc, global float *deriv,
 	global const int *tree, global const int *tree_link, global const float *tree_data,
-	const int size, const float eps
+	const int size
 ) {
 	const int id = get_global_id(0);
 	
@@ -142,7 +143,7 @@ kernel void solve_tree_rk4_d(
 	Particle p = part_load(id, psrc);
 	
 	d.pos = p.vel;
-	d.vel = accel_tree(id, p, psrc, tree, tree_link, tree_data, size, eps);
+	d.vel = accel_tree(id, p, psrc, tree, tree_link, tree_data, size);
 	
 	deriv_store(&d, id, deriv);
 }
