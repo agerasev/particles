@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <la/vec.hpp>
 
 template <typename T>
@@ -8,9 +10,11 @@ public:
 	fvec3 center;
 	float size;
 	
-	int max = 8;
+	int max = 64;
 	bool leaf = true;
 	int depth;
+	float minrad;
+	int mindepth = 0;
 	
 	std::vector<T> buffer;
 	
@@ -23,6 +27,8 @@ public:
 	_Branch(fvec3 center, float size, int depth) 
 	: center(center), size(size), depth(depth) {
 		buffer.reserve(max);
+		minrad = size;
+		mindepth = depth;
 	}
 	~_Branch() {
 		if(!leaf) {
@@ -52,24 +58,28 @@ public:
 		}
 		return i;
 	}
+	void branch_leaf() {
+		init_next();
+		std::vector<T> tmpbuf = buffer;
+		leaf = false;
+		buffer.clear();
+		minrad = size;
+		for(int i = 0; i < int(tmpbuf.size()); ++i) {
+			add(tmpbuf[i]);
+		}
+	}
 	void add_next(T p) {
 		next[get_next(p->pos)]->add(p);
 	}
-	void add_current(T p) {
-		if(int(buffer.size()) >= max && depth > 0) {
-			init_next();
-			add_next(p);
-			for(int i = 0; i < int(buffer.size()); ++i) {
-				add_next(buffer[i]);
-			}
-			buffer.clear();
-		} else {
-			buffer.push_back(p);
-		}
-	}
 	void add(T p) {
-		if(leaf) {
-			add_current(p);
+		if(leaf || p->rad > 0.5*size) {
+			if(p->rad < minrad) {
+				minrad = p->rad;
+			}
+			buffer.push_back(p);
+			if(leaf && (int(buffer.size()) >= max && depth > 0) && minrad <= 0.5*size) {
+				branch_leaf();
+			}
 		} else {
 			add_next(p);
 		}
@@ -77,26 +87,23 @@ public:
 	void update() {
 		barycenter = nullfvec3;
 		mass = 0.0f;
-		count = 0;
 		if(!leaf) {
 			for(int i = 0; i < 8; ++i) {
 				next[i]->update();
-				if(next[i]->count > 0) {
-					count += next[i]->count;
-					barycenter += next[i]->barycenter*next[i]->mass;
-					mass += next[i]->mass;
+				if(next[i]->mindepth < mindepth) {
+					mindepth = next[i]->mindepth;
 				}
-			}
-			barycenter /= mass;
-		} else {
-			count = buffer.size();
-			if(count > 0) {
-				for(int i = 0; i < int(buffer.size()); ++i) {
-					barycenter += buffer[i]->pos*buffer[i]->mass;
-					mass += buffer[i]->mass;
-				}
-				barycenter /= mass;
+				barycenter += next[i]->barycenter*next[i]->mass;
+				mass += next[i]->mass;
 			}
 		}
+		count = buffer.size();
+		if(count > 0) {
+			for(int i = 0; i < int(buffer.size()); ++i) {
+				barycenter += buffer[i]->pos*buffer[i]->mass;
+				mass += buffer[i]->mass;
+			}
+		}
+		barycenter /= mass;
 	}
 };

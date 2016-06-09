@@ -1,3 +1,3 @@
 #pragma once
 
-#define MAX_TREE_DEPTH 16
+#define MAX_TREE_DEPTH 32

@@ -24,25 +24,21 @@ float3 accel_branch(
 	*next = 0;
 	
 	Branch b = branch_load(0, tree + bptr);
-	if(b.count <= 0) {
-		return acc;
-	}
 	
 	BranchData bd = branch_data_load(0, tree_data + b.data);
 	float l = length(p.pos - bd.barycenter);
 	
-	if(bd.size/l < GTH) {
+	if(!b.isleaf && bd.size/l < GTH) {
 		return gravity_avg(p, bd.barycenter, bd.mass, eps);
 	} else {
-		if(b.isleaf) {
-			
-			for(int i = 0; i < b.count; ++i) {
-				const int _id = (tree_link + b.link)[i];
-				global const float *pdata = tree_data + b.data + BRANCH_DATA_FSIZE + i*PART_FSIZE;
-				acc += (id != _id)*gravity(p, part_load(0, pdata), eps);
-			}
-		} else {
-			*next = true;
+		global const int *link = tree_link + b.link + (!b.isleaf)*8;
+		for(int i = 0; i < b.count; ++i) {
+			const int _id = link[i];
+			global const float *pdata = tree_data + b.data + BRANCH_DATA_FSIZE + i*PART_FSIZE;
+			acc += (id != _id)*gravity(p, part_load(0, pdata), eps);
+		}
+		if(!b.isleaf) {
+			*next = 1;
 		}
 	}
 	return acc;

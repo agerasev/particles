@@ -15,7 +15,8 @@
 
 class SolverHybrid : public SolverGPU {
 private:
-	int tree_depth = MAX_TREE_DEPTH;
+	int max_tree_depth = MAX_TREE_DEPTH;
+	float max_tree_size = 32.0;
 	
 	int *tree_buffer = nullptr;
 	int *tree_link_buffer = nullptr;
@@ -69,14 +70,20 @@ public:
 		load_cl_parts(clbuf, parts.data());
 		
 		float tree_size = getTreeSize();
+		if(tree_size > max_tree_size) {
+			tree_size = max_tree_size;
+		}
 		
-		PBranch trunk(nullfvec3, tree_size, tree_depth);
+		PBranch trunk(nullfvec3, tree_size, max_tree_depth);
 		for(int i = 0; i < size; ++i) {
 			trunk.add(&parts[i]);
 		}
 		trunk.update();
 		
 		storeTree(&trunk);
+		
+		printf("tree min depth: %d\n", trunk.mindepth);
+		fflush(stdout);
 	}
 	
 	virtual void solve(float dt) override {
@@ -172,25 +179,29 @@ public:
 		branch_data_store(&sbd, 0, tree_data_buffer + data_pos);
 		data_pos += BRANCH_DATA_FSIZE;
 		
-		if(b->leaf) {
-			for(int i = 0; i < int(b->buffer.size()); ++i) {
-				const _Particle *p = b->buffer[i];
-				
-				// store particle data
-				Particle sp;
-				p->store(&sp);
-				part_store(&sp, 0, tree_data_buffer + data_pos);
-				data_pos += PART_FSIZE;
-				
-				// store particle id
-				tree_link_buffer[link_pos] = p->id;
-				link_pos += 1;
-			}
-		} else {
-			int *link = tree_link_buffer + link_pos;
-			link_pos += 8;
+		int *link_branch = tree_link_buffer + link_pos;
+		link_pos += b->count;
+		
+		int *link = link_branch + (b->leaf ? 0 : 8);
+		link_pos += 8;
+		
+		for(int i = 0; i < int(b->buffer.size()); ++i) {
+			const _Particle *p = b->buffer[i];
+			
+			// store particle data
+			Particle sp;
+			p->store(&sp);
+			part_store(&sp, 0, tree_data_buffer + data_pos);
+			data_pos += PART_FSIZE;
+			
+			// store particle id
+			link[i] = p->id;
+		}
+		
+		if(!b->leaf) {
 			for(int i = 0; i < 8; ++i) {
-				link[i] = writeBranch(b->next[i], pos, link_pos, data_pos);
+				PBranch *nb = b->next[i];
+				link_branch[i] = writeBranch(nb, pos, link_pos, data_pos);
 			}
 		}
 		

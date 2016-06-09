@@ -106,7 +106,7 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800); //, Engine::RECORD);
 	
-	const int size = 16*1024;
+	const int size = 256*1024;
 	
 	GLBank bank;
 	
@@ -114,14 +114,13 @@ int main(int argc, char *argv[]) {
 #ifndef CL_NO_GL_INTEROP
 	features |= SolverGPU::INTEROP;
 #endif
-	features |= Solver::RK4;
+	//features |= Solver::RK4;
 	
-	//SolverCPU
 	//SolverGPU
 	SolverHybrid 
 		solver(size, features);
 	
-	solver.dt = 5e-2;
+	solver.dt = 4e-2;
 	
 	Graphics gfx(&bank, &solver);
 	
