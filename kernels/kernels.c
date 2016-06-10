@@ -6,6 +6,8 @@
 #include <export/tree.h>
 #include <export/tree_depth.h>
 
+#define _M_SQRT3 1.7320508075688772935274463415059
+
 float3 accel_plain(const int id, const Particle p0, global const float *psrc, const int size) {
 	float3 acc = (float3)(0);
 	for(int i = 0; i < size; ++i) {
@@ -46,6 +48,7 @@ float3 accel_branch(
 }
 
 #define RECD MAX_TREE_DEPTH
+
 float3 accel_tree(
 	const int id, const Particle p, global const float *psrc, 
 	global const int *tree, global const int *tree_link, global const float *tree_data,
@@ -83,6 +86,93 @@ float3 accel_tree(
 		}
 	}
 	return acc;
+}
+
+int intersect_branch(
+	int id, const float3 pos, const float rad, const int bptr, int *next,
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const float ufactor
+) {
+	*next = 0;
+	
+	Branch b = branch_load(0, tree + bptr);
+	
+	BranchData bd = branch_data_load(0, tree_data + b.data);
+	
+	if((_M_SQRT3 + 1)*bd.size + rad > length(pos - bd.center)) {
+		global const int *link = tree_link + b.link + (!b.isleaf)*8;
+		for(int i = 0; i < b.count; ++i) {
+			const int _id = link[i];
+			global const float *pdata = tree_data + b.data + BRANCH_DATA_FSIZE + i*PART_FSIZE;
+			if(_id > id) {
+				Particle p = part_load(0, pdata);
+				if(ufactor*(p.rad + rad) > length(p.pos - pos)) {
+					return _id;
+				}
+			}
+		}
+		if(!b.isleaf) {
+			*next = 1;
+		}
+	}
+	
+	return -1;
+}
+
+int intersect_tree(
+	int id, const float3 pos, const float rad,
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const int size, const float ufactor
+) {
+	// recursion emulation
+	int2 stack[RECD];
+	int sptr = 0;
+	
+	int next;
+	int _id = intersect_branch(id, pos, rad, 0, &next, tree, tree_link, tree_data, ufactor);
+	if(_id >= 0)
+		return _id;
+	if(!next)
+		return -1;
+	
+	stack[0] = (int2)(0, 0);
+	
+	while(true) {
+		if(stack[sptr].y >= 8) {
+			sptr -= 1;
+			if(sptr < 0)
+				break;
+			continue;
+		}
+		int2 se = stack[sptr];
+		Branch b = branch_load(0, tree + se.x);
+		global const int *link = tree_link + b.link;
+		int bptr = link[se.y];
+		_id = intersect_branch(id, pos, rad, bptr, &next, tree, tree_link, tree_data, ufactor);
+		if(_id >= 0)
+			return _id;
+		stack[sptr].y += 1;
+		if(next) {
+			sptr += 1;
+			if(sptr >= RECD)
+				break;
+			stack[sptr] = (int2)(bptr, 0);
+		}
+	}
+	
+	return -1;
+}
+
+kernel void intersect(
+	global const float *psrc, global int *union_link, 
+	global const int *tree, global const int *tree_link, global const float *tree_data,
+	const int size, const float ufactor
+) {
+	const int id = get_global_id(0);
+	
+	Particle p = part_load(id, psrc);
+	
+	union_link[id] = intersect_tree(id, p.pos, p.rad, tree, tree_link, tree_data, size, ufactor);
 }
 
 void solve_step(const int id, global const float *psrc, global float *pdst, const float3 dpos, const float3 dvel, const float dt) {

@@ -108,65 +108,39 @@ public:
 		return true;
 	}
 	
-	void save_dynamic(const std::string &name, Solver *s) {
-		FILE *file = fopen(name.c_str(), "wb");
-		if(!file) {
-			fprintf(stderr, "cannot open file %s\n", name.c_str());
-			return;
-		}
-		
-		for(int i = 0; i < s->size; ++i) {
-			_Particle p = parts[i];
-			float fvout[3]; 
-			for(int j = 0; j < 3; ++j)
-				fvout[j] = p.pos[j];
-			fwrite((void*) &fvout, sizeof(fvout), 1, file);
-			/*
-			for(int j = 0; j < 3; ++j)
-				fvout[j] = p.vel[j];
-			fwrite((void*) &fvout, sizeof(fvout), 1, file);
-			*/
-		}
-		
-		fclose(file);
+	template <typename T>
+	static void write(FILE *file, T arg) {
+		fwrite((void*) &arg, sizeof(T), 1, file);
 	}
 	
-	void save_static(const std::string &name, Solver *s) {
-		FILE *file = fopen(name.c_str(), "wb");
-		if(!file) {
-			fprintf(stderr, "cannot open file %s\n", name.c_str());
-			return;
-		}
-		
-		for(int i = 0; i < s->size; ++i) {
-			_Particle p = parts[i];
-			float fout;
-			float fvout[3]; 
-			fout = p.mass;
-			fwrite((void*) &fout, sizeof(fout), 1, file);
-			fout = p.rad;
-			fwrite((void*) &fout, sizeof(fout), 1, file);
-			for(int j = 0; j < 3; ++j)
-				fvout[j] = p.color[j];
-			fwrite((void*) &fvout, sizeof(fvout), 1, file);
-		}
-		
-		fclose(file);
+	template <typename T>
+	static void write(FILE *file, T *arg, int size) {
+		fwrite((void*) arg, size*sizeof(T), 1, file);
 	}
 	
-	void save_meta(const std::string &name, Solver *s) {
+	void save(const std::string &name) {
 		FILE *file = fopen(name.c_str(), "wb");
 		if(!file) {
 			fprintf(stderr, "cannot open file %s\n", name.c_str());
 			return;
 		}
 		
-		int32_t iout;
+		solver->load(parts.data());
 		
-		iout = 1; // version
-		fwrite((void*) &iout, sizeof(iout), 1, file);
-		iout = s->size; // size
-		fwrite((void*) &iout, sizeof(iout), 1, file);
+		write(file, 2); // verion
+		write(file, solver->size);
+		
+		for(int i = 0; i < solver->size; ++i) {
+			_Particle p = parts[i];
+			write(file, p.mass);
+			write(file, p.rad);
+			write(file, p.pos.data(), 3);
+			
+			unsigned char cc[4] = {0,0,0,0xff};
+			for(int i = 0; i < 3; ++i)
+				cc[i] = (unsigned char) (255*p.color[i]);
+			write(file, cc, 4);
+		}
 		
 		fclose(file);
 	}
@@ -185,8 +159,8 @@ public:
 			
 			if(features & RECORD) {
 				char name[32];
-				snprintf(name, sizeof(name), "record/dyn%05d", counter); 
-				save_dynamic(name, solver);
+				snprintf(name, sizeof(name), "record/scene%05d", counter); 
+				save(name);
 			}
 			
 			
@@ -204,11 +178,6 @@ public:
 	
 	void setSolver(Solver *solver) {
 		this->solver = solver;
-		if(features & RECORD) {
-			parts.resize(solver->size);
-			solver->load(parts.data());
-			save_meta("record/meta", solver);
-			save_static("record/static", solver);
-		}
+		parts.resize(solver->size);
 	}
 };

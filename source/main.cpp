@@ -58,6 +58,7 @@ void distrib_galaxy(const int size, _Particle *parts, std::function<float()> ran
 		float _g = clamp(2 - fabs(_a - 2));
 		float _b = clamp(2 - fabs(_a - 4));
 		p.color = (clamp(1 - 2*r) + 0.1)*fvec3(1, 1, 1) + clamp(2*r)*fvec3(_r, _g, _b);
+		p.color = normalize(p.color);
 		
 		parts[i] = p;
 		
@@ -102,7 +103,7 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 #include <cl/device.hpp>
 
 int main(int argc, char *argv[]) {
-	Engine engine(800, 800);//, Engine::RECORD);
+	Engine engine(800, 800, Engine::RECORD);
 	
 	const int size = 64*1024;
 	
@@ -118,7 +119,7 @@ int main(int argc, char *argv[]) {
 	SolverHybrid 
 		solver(size, features);
 	
-	solver.dt = 4e-2;
+	solver.dt = 2e-2;
 	
 	Graphics gfx(&bank, &solver);
 	

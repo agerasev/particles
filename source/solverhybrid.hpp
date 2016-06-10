@@ -22,6 +22,8 @@ private:
 	int *tree_link_buffer = nullptr;
 	float *tree_data_buffer = nullptr;
 	
+	int *union_link_buffer = nullptr;
+	
 	typedef _Branch<const _Particle*> PBranch;
 	
 public:
@@ -43,6 +45,10 @@ public:
 		buffers.insert("tree_data", new cl::buffer_object(context, bs*sizeof(float)));
 		tree_data_buffer = new float[bs];
 		
+		bs = size;
+		buffers.insert("union_link", new cl::buffer_object(context, bs*sizeof(int)));
+		union_link_buffer = new int[bs];
+		
 		for(cl::buffer_object *b : buffers) {
 			b->bind_queue(queue->get_cl_command_queue());
 		}
@@ -51,6 +57,7 @@ public:
 		delete[] tree_buffer;
 		delete[] tree_link_buffer;
 		delete[] tree_data_buffer;
+		delete[] union_link_buffer;
 	}
 	
 	float getTreeSize() {
@@ -78,7 +85,7 @@ public:
 		trunk.update();
 	}
 	
-	void updateTree(cl::buffer_object *clbuf) {
+	void updateTree(cl::buffer_object *clbuf, int *mindp = nullptr, int *maxcp = nullptr) {
 		load_cl_parts(clbuf, parts.data());
 		
 		PBranch trunk(nullfvec3, getTreeSize(), max_tree_depth);
@@ -86,9 +93,10 @@ public:
 		
 		storeTree(&trunk);
 		
-		printf("tree min depth: %d\n", trunk.mindepth);
-		printf("tree max count: %d\n", trunk.maxcount);
-		fflush(stdout);
+		if(mindp && *mindp > trunk.mindepth)
+			*mindp = trunk.mindepth;
+		if(maxcp && *maxcp < trunk.maxcount)
+			*maxcp = trunk.maxcount;
 	}
 	
 	void unite() {
@@ -97,29 +105,39 @@ public:
 		PBranch trunk(nullfvec3, getTreeSize(), max_tree_depth);
 		buildTree(trunk);
 		
+		kernels["intersect"]->evaluate(
+			cl::work_range(size), buffers["part0"], buffers["union_link"], 
+			buffers["tree"], buffers["tree_link"], buffers["tree_data"],
+			size, 3e-2f
+		);
+		
+		buffers["union_link"]->load_data(union_link_buffer);
+		
 		int newsize = size;
 		for(int i = 0; i < size; ++i) {
 			_Particle &p = parts[i];
 			if(p.id >= 0) {
-				std::vector<const _Particle*> found;
-				trunk.intersect(found, p.pos, p.rad, 1e-2);
-				float newmass = p.mass;
-				fvec3 wpos = p.pos*p.mass;
-				fvec3 wvel = p.vel*p.mass; // momentum
-				for(const _Particle *cfp : found) {
-					if(cfp->id >= 0 && cfp->id != p.id) {
-						_Particle &fp = parts[cfp->id];
-						wpos += fp.pos*fp.mass;
-						wvel += fp.vel*fp.mass;
-						newmass += fp.mass;
-						fp.id = -1;
-						newsize -= 1;
-					}
+				int _id = union_link_buffer[i];
+				if(_id >= 0) {
+					float newmass = p.mass;
+					fvec3 wpos = p.pos*p.mass;
+					fvec3 wvel = p.vel*p.mass; // momentum
+					fvec3 wcol = p.color*p.mass;
+					
+					_Particle &fp = parts[_id];
+					wpos += fp.pos*fp.mass;
+					wvel += fp.vel*fp.mass;
+					wcol += fp.color*fp.mass;
+					newmass += fp.mass;
+					fp.id = -1;
+					newsize -= 1;
+					
+					p.pos = wpos/newmass;
+					p.vel = wvel/newmass;
+					p.color = wcol/newmass;
+					p.mass = newmass;
+					p.update();
 				}
-				p.pos = wpos/newmass;
-				p.vel = wvel/newmass;
-				p.mass = newmass;
-				p.update();
 			}
 		}
 		
@@ -139,9 +157,6 @@ public:
 			
 			size = newsize;
 			
-			printf("particle new count: %d\n", size);
-			fflush(stdout);
-			
 			store(parts.data());
 		}
 	}
@@ -151,13 +166,14 @@ public:
 		fflush(stdout);
 		
 		// unite
-		//unite();
+		unite();
 		
 		// solve
-			
+		int mindepth = max_tree_depth;
+		int maxcount = 0;
 		if(features & RK4) {
 			// stage 1
-			updateTree(buffers["part0"]);
+			updateTree(buffers["part0"], &mindepth, &maxcount);
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["deriv0"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
@@ -169,7 +185,7 @@ public:
 			);
 			
 			// stage 2
-			updateTree(buffers["part1"]);
+			updateTree(buffers["part1"], &mindepth, &maxcount);
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv1"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
@@ -181,7 +197,7 @@ public:
 			);
 			
 			// stage 3
-			updateTree(buffers["part1"]);
+			updateTree(buffers["part1"], &mindepth, &maxcount);
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv2"], 
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
@@ -193,7 +209,7 @@ public:
 			);
 			
 			// stage 4
-			updateTree(buffers["part1"]);
+			updateTree(buffers["part1"], &mindepth, &maxcount);
 			kernels["solve_tree_rk4_d"]->evaluate(
 				cl::work_range(size), buffers["part1"], buffers["deriv3"],  
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"],
@@ -205,13 +221,17 @@ public:
 				size, dt
 			);
 		} else {
-			updateTree(buffers["part0"]);
+			updateTree(buffers["part0"], &mindepth, &maxcount);
 			kernels["solve_tree_euler"]->evaluate(
 				cl::work_range(size), buffers["part0"], buffers["part1"],
 				buffers["tree"], buffers["tree_link"], buffers["tree_data"], 
 				size, dt
 			);
 		}
+		
+		printf("tree min depth: %d\n", mindepth);
+		printf("tree max count: %d\n", maxcount);
+		fflush(stdout);
 		
 		cl::buffer_object *tmp = buffers["part0"];
 		buffers["part0"] = buffers["part1"];
