@@ -10,7 +10,7 @@
 #include <la/vec.hpp>
 
 #include "glbank.hpp"
-#include "graphics.hpp"
+#include "render.hpp"
 #include "engine.hpp"
 #include "particle.hpp"
 
@@ -26,14 +26,14 @@ double clamp(double a) {
 	return a;
 }
 
-void distrib_galaxy(const int size, _Particle *parts, std::function<float()> rand) {
+void distrib_galaxy(const int size, ParticleCPU *parts, std::function<float()> rand) {
 	float side = 2.0*pow(double(size), 1.0/2.0);
 	float nr = side/sqrt(2*_M_PI);
 	float na = side*sqrt(2*_M_PI);
 	
 	int ca = 0, cr = 1;
 	for(int i = 0; i < size; ++i) {
-		_Particle p;
+		ParticleCPU p;
 		int cna = int(na*cr/nr);
 		
 		float a = 2*_M_PI*float(ca)/cna;
@@ -70,11 +70,11 @@ void distrib_galaxy(const int size, _Particle *parts, std::function<float()> ran
 	}
 }
 
-void distrib_cube(const int size, _Particle *parts, std::function<float()> rand) {
+void distrib_cube(const int size, ParticleCPU *parts, std::function<float()> rand) {
 	int side = round(pow(size, 1.0/3.0));
 	
 	for(int i = 0; i < size; ++i) {
-		_Particle p;
+		ParticleCPU p;
 		
 		float x = float((i/side)/side)/side - 0.5;
 		float y = float((i/side)%side)/side - 0.5;
@@ -103,11 +103,9 @@ void distrib_cube(const int size, _Particle *parts, std::function<float()> rand)
 #include <cl/device.hpp>
 
 int main(int argc, char *argv[]) {
-	Engine engine(800, 800, Engine::RECORD);
+	Engine engine(800, 800);//, Engine::RECORD);
 	
-	const int size = 64*1024;
-	
-	GLBank bank;
+	const int size = 1*1024;
 	
 	int features = 0;
 #ifndef CL_NO_GL_INTEROP
@@ -121,13 +119,13 @@ int main(int argc, char *argv[]) {
 	
 	solver.dt = 2e-2;
 	
-	Graphics gfx(&bank, &solver);
+	RenderGL gfx(&solver);
 	
 	engine.setGraphics(&gfx);
 	engine.setSolver(&solver);
 	
 	{
-		std::vector<_Particle> parts(size);
+		std::vector<ParticleCPU> parts(size);
 		
 		std::minstd_rand rand_engine;
 		std::uniform_real_distribution<> rand_dist(-0.5, 0.5);

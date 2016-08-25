@@ -24,7 +24,7 @@ private:
 	
 	int *union_link_buffer = nullptr;
 	
-	typedef _Branch<const _Particle*> PBranch;
+	typedef BranchCPU<const ParticleCPU*> PBranch;
 	
 public:
 	SolverHybrid(int size, int features) : SolverGPU(size, features) {
@@ -115,7 +115,7 @@ public:
 		
 		int newsize = size;
 		for(int i = 0; i < size; ++i) {
-			_Particle &p = parts[i];
+			ParticleCPU &p = parts[i];
 			if(p.id >= 0) {
 				int _id = union_link_buffer[i];
 				if(_id >= 0) {
@@ -124,7 +124,7 @@ public:
 					fvec3 wvel = p.vel*p.mass; // momentum
 					fvec3 wcol = p.color*p.mass;
 					
-					_Particle &fp = parts[_id];
+					ParticleCPU &fp = parts[_id];
 					wpos += fp.pos*fp.mass;
 					wvel += fp.vel*fp.mass;
 					wcol += fp.color*fp.mass;
@@ -271,7 +271,7 @@ public:
 		link_pos += 8;
 		
 		for(int i = 0; i < int(b->buffer.size()); ++i) {
-			const _Particle *p = b->buffer[i];
+			const ParticleCPU *p = b->buffer[i];
 			
 			// store particle data
 			Particle sp;

@@ -34,7 +34,7 @@ protected:
 	
 	std::vector<float> gl_buffer;
 	
-	std::vector<_Particle> parts;
+	std::vector<ParticleCPU> parts;
 	std::vector<float> parts_buffer;
 	
 public:
@@ -110,11 +110,11 @@ public:
 		delete dprop;
 	}
 	
-	void store_gls(const _Particle parts[]) {
+	void store_gls(const ParticleCPU parts[]) {
 		float *buf = gl_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
-			const _Particle &p = parts[i];
+			const ParticleCPU &p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.rad;
 			buf[4*(i*ps + 0) + 1] = 0.0f;
@@ -133,11 +133,11 @@ public:
 		);
 	}
 	
-	void store_gld(const _Particle parts[]) {
+	void store_gld(const ParticleCPU parts[]) {
 		float *buf = gl_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
-			_Particle p = parts[i];
+			ParticleCPU p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.pos.x();
 			buf[4*(i*ps + 0) + 1] = p.pos.y();
@@ -156,12 +156,12 @@ public:
 		);
 	}
 	
-	void store_cl_parts(cl::buffer_object *clbuf, const _Particle parts[]) {
+	void store_cl_parts(cl::buffer_object *clbuf, const ParticleCPU parts[]) {
 		float *buf = parts_buffer.data();
 		
 		for(int i = 0; i < size; ++i) {
 			Particle pg;
-			const _Particle &pc = parts[i];
+			const ParticleCPU &pc = parts[i];
 			pc.store(&pg);
 			part_store(&pg, i, buf);
 		}
@@ -169,19 +169,19 @@ public:
 		clbuf->store_data(buf);
 	}
 	
-	void load_cl_parts(cl::buffer_object *clbuf, _Particle parts[]) {
+	void load_cl_parts(cl::buffer_object *clbuf, ParticleCPU parts[]) {
 		float *buf = parts_buffer.data();
 		
 		clbuf->load_data(parts_buffer.data());
 		
 		for(int i = 0; i < size; ++i) {
 			const Particle pg = part_load(i, buf);
-			_Particle &pc = parts[i];
+			ParticleCPU &pc = parts[i];
 			pc.load(&pg);
 		}
 	}
 	
-	virtual void store(const _Particle parts[]) override {
+	virtual void store(const ParticleCPU parts[]) override {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
@@ -190,7 +190,7 @@ public:
 		store_gld(parts);
 	}
 	
-	virtual void load(_Particle parts[]) {
+	virtual void load(ParticleCPU parts[]) {
 		load_cl_parts(buffers["part0"], parts);
 	}
 	

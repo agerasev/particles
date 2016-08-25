@@ -13,9 +13,9 @@
 
 class SolverCPU : public Solver {
 private:
-	class PartBuf : public _Particle {
+	class ParticleBuffered : public ParticleCPU {
 	private:
-		void _copy(const _Particle &p) {
+		void _copy(const ParticleCPU &p) {
 			color = p.color;
 			mass = p.mass;
 			rad = p.rad;
@@ -31,19 +31,19 @@ private:
 		static const int bufs = 4;
 		fvec3 dpos[bufs], dvel[bufs];
 		
-		PartBuf() = default;
-		PartBuf(const _Particle &p) {
+		ParticleBuffered() = default;
+		ParticleBuffered(const ParticleCPU &p) {
 			_copy(p);
 		}
-		PartBuf &operator = (const _Particle &p) {
+		ParticleBuffered &operator = (const ParticleCPU &p) {
 			_copy(p);
 			return *this;
 		}
 	};
 	
-	typedef _Branch<const PartBuf*> PBranch;
+	typedef BranchCPU<const ParticleBuffered*> PBranch;
 	
-	PartBuf *parts;
+	ParticleBuffered *parts;
 	
 	float *buffer;
 	
@@ -53,7 +53,7 @@ private:
 	
 public:
 	SolverCPU(int size, int features) : Solver(size, features) {
-		parts = new PartBuf[size];
+		parts = new ParticleBuffered[size];
 		sprop = new gl::Texture();
 		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
 		dprop = new gl::Texture();
@@ -73,33 +73,33 @@ public:
 		printf("grav: %lf s\n", t_grav/n_grav);
 	}
 	
-	virtual void store(const _Particle parts[]) {
+	virtual void store(const ParticleCPU parts[]) {
 		for(int i = 0; i < size; ++i) {
 			this->parts[i] = parts[i];
 		}
 	}
 	
-	virtual void load(_Particle parts[]) {
+	virtual void load(ParticleCPU parts[]) {
 		for(int i = 0; i < size; ++i) {
 			parts[i] = this->parts[i];
 		}
 	}
 	
-	fvec3 grav(PartBuf *p, const PartBuf *op) {
+	fvec3 grav(ParticleBuffered *p, const ParticleBuffered *op) {
 		fvec3 r = p->pos - op->pos;
 		float e = eps*(p->rad + op->rad);
 		float l = sqrt(dot(r,r) + e*e);
 		return -1e-4*op->mass*r/(l*l*l);
 	}
 	
-	fvec3 grav_avg(PartBuf *p, const fvec3 &pos, const float mass) {
+	fvec3 grav_avg(ParticleBuffered *p, const fvec3 &pos, const float mass) {
 		fvec3 r = p->pos - pos;
 		float e = eps*p->rad;
 		float l = sqrt(dot(r,r) + e*e);
 		return -1e-4*mass*r/(l*l*l);
 	}
 	
-	fvec3 elast(PartBuf *p0, const PartBuf *p1) {
+	fvec3 elast(ParticleBuffered *p0, const ParticleBuffered *p1) {
 		fvec3 p = p0->pos - p1->pos;
 		fvec3 v = p0->vel - p1->vel;
 		float r = p0->rad + p1->rad;
@@ -111,11 +111,11 @@ public:
 		return 1e2*f/p0->mass;
 	}
 	
-	fvec3 attract(PartBuf *p, const PartBuf *op) {
+	fvec3 attract(ParticleBuffered *p, const ParticleBuffered *op) {
 		return (p->id != op->id)*(grav(p, op));// + elast(p, op));
 	}
 	
-	fvec3 attract(PartBuf *p, const _Branch<const PartBuf*> *b) {
+	fvec3 attract(ParticleBuffered *p, const BranchCPU<const ParticleBuffered*> *b) {
 		float l = length(p->pos - b->barycenter);
 		if(b->size/l < gth) {
 			return grav_avg(p, b->barycenter, b->mass);
@@ -215,7 +215,7 @@ public:
 		float *buf = buffer;
 		
 		for(int i = 0; i < size; ++i) {
-			_Particle &p = parts[i];
+			ParticleCPU &p = parts[i];
 	
 			buf[4*(i*ps + 0) + 0] = p.rad;
 			buf[4*(i*ps + 0) + 1] = 0.0f;
@@ -235,7 +235,7 @@ public:
 		);
 		
 		for(int i = 0; i < size; ++i) {
-			_Particle &p = parts[i];
+			ParticleCPU &p = parts[i];
 
 			//position
 			buf[4*(i*ps + 0) + 0] = p.pos.x();

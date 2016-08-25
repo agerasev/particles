@@ -6,7 +6,7 @@
 #include <GL/glew.h>
 
 #include "solver.hpp"
-#include "graphics.hpp"
+#include "render.hpp"
 
 class Engine {
 public:
@@ -18,12 +18,12 @@ private:
 	SDL_Window *window;
 	SDL_GLContext context;
 	
-	Graphics *gfx = nullptr;
+	RenderGL *gfx = nullptr;
 	Solver *solver = nullptr;
 	
 	bool hold = false;
 	
-	std::vector<_Particle> parts;
+	std::vector<ParticleCPU> parts;
 	
 	int features = 0;
 
@@ -131,7 +131,7 @@ public:
 		write(file, solver->size);
 		
 		for(int i = 0; i < solver->size; ++i) {
-			_Particle p = parts[i];
+			ParticleCPU p = parts[i];
 			write(file, p.mass);
 			write(file, p.rad);
 			write(file, p.pos.data(), 3);
@@ -171,7 +171,7 @@ public:
 		}
 	}
 	
-	void setGraphics(Graphics *gfx) {
+	void setGraphics(RenderGL *gfx) {
 		this->gfx = gfx;
 		gfx->resize(width, height);
 	}

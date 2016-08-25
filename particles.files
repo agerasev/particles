@@ -23,7 +23,7 @@ scripts/clean.sh
 scripts/init.sh
 scripts/make.bat
 source/engine.hpp
-source/graphics.hpp
+source/render.hpp
 shaders/draw-quad.frag
 shaders/draw-quad.vert
 source/solver.hpp

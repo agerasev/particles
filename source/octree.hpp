@@ -7,7 +7,7 @@
 #include "const.hpp"
 
 template <typename T>
-class _Branch {
+class BranchCPU {
 public:
 	fvec3 center;
 	float size;
@@ -22,13 +22,13 @@ public:
 	
 	std::vector<T> buffer;
 	
-	_Branch *next[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+	BranchCPU *next[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 	
 	fvec3 barycenter;
 	float mass;
 	int count = 0;
 	
-	_Branch(fvec3 center, float size, int depth) 
+	BranchCPU(fvec3 center, float size, int depth) 
 	: center(center), size(size), depth(depth) {
 		buffer.reserve(max);
 		minrad = size;
@@ -36,7 +36,7 @@ public:
 		mindepth = depth;
 		maxcount = 0;
 	}
-	~_Branch() {
+	~BranchCPU() {
 		if(!leaf) {
 			for(int i = 0; i < 8; ++i) {
 				delete next[i];
@@ -50,7 +50,7 @@ public:
 			for(int j = 0; j < 3; ++j) {
 				dir[j] = ((i >> j) & 1) - 0.5;
 			}
-			next[i] = new _Branch<T>(
+			next[i] = new BranchCPU<T>(
 				center + dir*size,
 				0.5*size, depth - 1
 			);

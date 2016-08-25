@@ -42,8 +42,8 @@ public:
 	}
 	virtual ~Solver() = default;
 	
-	virtual void load(_Particle parts[]) = 0;
-	virtual void store(const _Particle parts[]) = 0;
+	virtual void load(ParticleCPU parts[]) = 0;
+	virtual void store(const ParticleCPU parts[]) = 0;
 	
 	virtual void solve(float dt) = 0;
 	void solve() {

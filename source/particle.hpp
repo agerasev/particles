@@ -5,7 +5,7 @@
 #include "opencl.hpp"
 #include <export/particle.h>
 
-class _Particle {
+class ParticleCPU {
 public:
 	int id;
 	
