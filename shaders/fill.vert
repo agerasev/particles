@@ -13,5 +13,5 @@ void main(void) {
 	} else if(id == 0 || id == 3) {
 		pos.x = 1.0;
 	}
-    gl_Position = vec4(pos, 0.0, 1.0);
+	gl_Position = vec4(pos, 0.0, 1.0);
 }

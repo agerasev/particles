@@ -237,9 +237,6 @@ public:
 		buffers["part0"] = buffers["part1"];
 		buffers["part1"] = tmp;
 		
-		// write result to gl texture
-		transfer_cl_to_gl();
-		
 		queue->flush();
 	}
 	

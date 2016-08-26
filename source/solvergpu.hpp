@@ -15,44 +15,24 @@
 #include <export/deriv.h>
 
 class SolverGPU : public Solver {
-public:
-	static const int
-	INTEROP = (1 << (16 + 0));
 protected:
 	cl::session *session;
 	cl::queue *queue;
 	
 	cl::map<cl::buffer_object*> buffers;
-#ifndef CL_NO_GL_INTEROP
-	cl::gl_image_object *image = nullptr;
-#endif
 	
 	cl::program *program;
 	cl::map<cl::kernel*> kernels;
-	
-	ivec2 texs;
-	
-	std::vector<float> gl_buffer;
 	
 	std::vector<ParticleCPU> parts;
 	std::vector<float> parts_buffer;
 	
 public:
 	SolverGPU(const int size, int features) : Solver(size, features) {
-		texs = split_size(size*ps);
-		
 		parts.resize(size);
 		parts_buffer.resize(PART_FSIZE*size);
-		gl_buffer.resize(4*ps*size);
-		
-		sprop = new gl::Texture();
-		dprop = new gl::Texture();
-		sprop->init(2, texs.data(), gl::Texture::RGBA32F);
 		
 		int cl_features = 0;
-		if(features & INTEROP) {
-			cl_features |= cl::feature::GL_INTEROP;
-		}
 		session = new cl::session(1, cl_features);
 		queue = &session->get_queue();
 		
@@ -67,20 +47,6 @@ public:
 		for(cl::buffer_object *b : buffers) {
 			b->bind_queue(queue->get_cl_command_queue());
 		}
-	
-#ifndef CL_NO_GL_INTEROP
-		if(features & INTEROP) {
-			image = new cl::gl_image_object(context, texs.x(), texs.y());
-			image->bind_queue(queue->get_cl_command_queue());
-			dprop->wrap(image->get_texture(), 2, texs.data(), gl::Texture::RGBA32F);
-
-		} else {
-#else
-		{
-#endif
-			dprop->init(2, texs.data(), gl::Texture::RGBA32F);
-		}
-		
 		
 		program = new cl::program(context, session->get_device().id(), "kernels.c", "kernels");
 		kernels = program->get_kernel_map();
@@ -94,66 +60,11 @@ public:
 		
 		delete program;
 		
-#ifndef CL_NO_GL_INTEROP
-		if(image != nullptr) {
-			delete image;
-		}
-#endif
-		
 		for(cl::buffer_object *b : buffers) {
 			delete b;
 		}
 		
 		delete session;
-		
-		delete sprop;
-		delete dprop;
-	}
-	
-	void store_gls(const ParticleCPU parts[]) {
-		float *buf = gl_buffer.data();
-		
-		for(int i = 0; i < size; ++i) {
-			const ParticleCPU &p = parts[i];
-	
-			buf[4*(i*ps + 0) + 0] = p.rad;
-			buf[4*(i*ps + 0) + 1] = 0.0f;
-			buf[4*(i*ps + 0) + 2] = 0.0f;
-			buf[4*(i*ps + 0) + 3] = p.mass;
-			
-			buf[4*(i*ps + 1) + 0] = p.color.x();
-			buf[4*(i*ps + 1) + 1] = p.color.y();
-			buf[4*(i*ps + 1) + 2] = p.color.z();
-			buf[4*(i*ps + 1) + 3] = 1.0f;
-		}
-		
-		sprop->write(
-			buf, nullivec2.data(), split_size(size*ps).data(), 
-			gl::Texture::RGBA, gl::FLOAT
-		);
-	}
-	
-	void store_gld(const ParticleCPU parts[]) {
-		float *buf = gl_buffer.data();
-		
-		for(int i = 0; i < size; ++i) {
-			ParticleCPU p = parts[i];
-	
-			buf[4*(i*ps + 0) + 0] = p.pos.x();
-			buf[4*(i*ps + 0) + 1] = p.pos.y();
-			buf[4*(i*ps + 0) + 2] = p.pos.z();
-			buf[4*(i*ps + 0) + 3] = 1.0f;
-			
-			buf[4*(i*ps + 1) + 0] = p.vel.x();
-			buf[4*(i*ps + 1) + 1] = p.vel.y();
-			buf[4*(i*ps + 1) + 2] = p.vel.z();
-			buf[4*(i*ps + 1) + 3] = 1.0f;
-		}
-		
-		dprop->write(
-			buf, nullivec2.data(), split_size(size*ps).data(), 
-			gl::Texture::RGBA, gl::FLOAT
-		);
 	}
 	
 	void store_cl_parts(cl::buffer_object *clbuf, const ParticleCPU parts[]) {
@@ -167,6 +78,8 @@ public:
 		}
 		
 		clbuf->store_data(buf);
+		
+		queue->flush();
 	}
 	
 	void load_cl_parts(cl::buffer_object *clbuf, ParticleCPU parts[]) {
@@ -179,6 +92,8 @@ public:
 			ParticleCPU &pc = parts[i];
 			pc.load(&pg);
 		}
+		
+		queue->flush();
 	}
 	
 	virtual void store(const ParticleCPU parts[]) override {
@@ -186,34 +101,16 @@ public:
 			this->parts[i] = parts[i];
 		}
 		store_cl_parts(buffers["part0"], parts);
-		store_gls(parts);
-		store_gld(parts);
 	}
 	
 	virtual void load(ParticleCPU parts[]) {
+		for(int i = 0; i < size; ++i) {
+			parts[i] = this->parts[i];
+		}
 		load_cl_parts(buffers["part0"], parts);
 	}
 	
-	void transfer_cl_to_gl() {
-#ifndef CL_NO_GL_INTEROP
-		if(features & INTEROP) {
-			kernels["write_gl_tex"]->evaluate(
-				cl::work_range(size), buffers["part0"],
-				image, size, maxts
-			);
-		} else {
-#else
-		{
-#endif
-			load_cl_parts(buffers["part0"], parts.data());
-			store_gld(parts.data());
-		}
-	}
-	
 	virtual void solve(float dt) override {
-		
-		// solve
-		
 		if(features & RK4) {
 			// stage 1
 			kernels["solve_plain_rk4_d"]->evaluate(
@@ -265,10 +162,6 @@ public:
 		cl::buffer_object *tmp = buffers["part0"];
 		buffers["part0"] = buffers["part1"];
 		buffers["part1"] = tmp;
-		
-		
-		// write result to gl texture
-		transfer_cl_to_gl();
 		
 		queue->flush();
 	}

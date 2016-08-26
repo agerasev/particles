@@ -18,7 +18,7 @@ private:
 	SDL_Window *window;
 	SDL_GLContext context;
 	
-	RenderGL *gfx = nullptr;
+	RenderGL *render = nullptr;
 	Solver *solver = nullptr;
 	
 	bool hold = false;
@@ -87,13 +87,13 @@ public:
 				if(event.window.event == SDL_WINDOWEVENT_RESIZED) {
 					width = event.window.data1; 
 					height = event.window.data2;
-					if(gfx != nullptr) {
-						gfx->resize(width, height);
+					if(render != nullptr) {
+						render->resize(width, height);
 					}
 				}
 			} else if(event.type == SDL_MOUSEMOTION) {
 				if(hold)
-					gfx->spin(event.motion.xrel, event.motion.yrel);
+					render->spin(event.motion.xrel, event.motion.yrel);
 			} else if(event.type == SDL_MOUSEBUTTONDOWN) {
 				if(event.button.button == SDL_BUTTON_LEFT)
 					hold = true;
@@ -102,7 +102,7 @@ public:
 					hold = false;
 			} else if(event.type == SDL_MOUSEWHEEL) {
 				if(event.wheel.y)
-					gfx->zoom(event.wheel.y);
+					render->zoom(event.wheel.y);
 			}
 		}
 		return true;
@@ -164,15 +164,15 @@ public:
 			}
 			
 			
-			gfx->render();
+			render->render();
 			SDL_GL_SwapWindow(window);
 			
 			counter += 1;
 		}
 	}
 	
-	void setGraphics(RenderGL *gfx) {
-		this->gfx = gfx;
+	void setRender(RenderGL *gfx) {
+		this->render = gfx;
 		gfx->resize(width, height);
 	}
 	

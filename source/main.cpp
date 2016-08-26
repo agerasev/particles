@@ -105,14 +105,11 @@ void distrib_cube(const int size, ParticleCPU *parts, std::function<float()> ran
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);//, Engine::RECORD);
 	
-	const int size = 1*1024;
+	const int size = 16*1024;
 	
-	int features = 0;
-#ifndef CL_NO_GL_INTEROP
-	features |= SolverGPU::INTEROP;
-#endif
-	features |= Solver::RK4;
+	int features = 0; //Solver::RK4;
 	
+	//SolverCPU
 	//SolverGPU
 	SolverHybrid 
 		solver(size, features);
@@ -121,7 +118,7 @@ int main(int argc, char *argv[]) {
 	
 	RenderGL gfx(&solver);
 	
-	engine.setGraphics(&gfx);
+	engine.setRender(&gfx);
 	engine.setSolver(&solver);
 	
 	{

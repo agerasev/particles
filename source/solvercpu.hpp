@@ -45,8 +45,6 @@ private:
 	
 	ParticleBuffered *parts;
 	
-	float *buffer;
-	
 	// profiling
 	double t_tree = 0.0, t_grav = 0.0;
 	int n_tree = 0, n_grav = 0;
@@ -54,19 +52,8 @@ private:
 public:
 	SolverCPU(int size, int features) : Solver(size, features) {
 		parts = new ParticleBuffered[size];
-		sprop = new gl::Texture();
-		sprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
-		dprop = new gl::Texture();
-		dprop->init(2, split_size(size*ps).data(), gl::Texture::RGBA32F);
-		
-		ivec2 texs = split_size(size*ps);
-		buffer = new float[4*texs[0]*texs[1]];
 	}
 	virtual ~SolverCPU() {
-		delete[] buffer;
-		
-		delete dprop;
-		delete sprop;
 		delete[] parts;
 		
 		printf("tree: %lf s\n", t_tree/n_tree);
@@ -209,50 +196,5 @@ public:
 		
 		n_tree += 1;
 		n_grav += 1;
-		
-		// load to gl textures
-		
-		float *buf = buffer;
-		
-		for(int i = 0; i < size; ++i) {
-			ParticleCPU &p = parts[i];
-	
-			buf[4*(i*ps + 0) + 0] = p.rad;
-			buf[4*(i*ps + 0) + 1] = 0.0f;
-			buf[4*(i*ps + 0) + 2] = 0.0f;
-			buf[4*(i*ps + 0) + 3] = p.mass;
-		
-			// color
-			buf[4*(i*ps + 1) + 0] = p.color.x();
-			buf[4*(i*ps + 1) + 1] = p.color.y();
-			buf[4*(i*ps + 1) + 2] = p.color.z();
-			buf[4*(i*ps + 1) + 3] = 1.0f;
-		}
-		
-		sprop->write(
-			buf, nullivec2.data(), split_size(size*ps).data(), 
-			gl::Texture::RGBA, gl::FLOAT
-		);
-		
-		for(int i = 0; i < size; ++i) {
-			ParticleCPU &p = parts[i];
-
-			//position
-			buf[4*(i*ps + 0) + 0] = p.pos.x();
-			buf[4*(i*ps + 0) + 1] = p.pos.y();
-			buf[4*(i*ps + 0) + 2] = p.pos.z();
-			buf[4*(i*ps + 0) + 3] = 1.0f;
-
-			// velocity
-			buf[4*(i*ps + 1) + 0] = p.vel.x();
-			buf[4*(i*ps + 1) + 1] = p.vel.y();
-			buf[4*(i*ps + 1) + 2] = p.vel.z();
-			buf[4*(i*ps + 1) + 3] = 1.0f;
-		}
-		
-		dprop->write(
-			buf, nullivec2.data(), split_size(size*ps).data(), 
-			gl::Texture::RGBA, gl::FLOAT
-		);
 	}
 };
