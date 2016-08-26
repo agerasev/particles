@@ -11,6 +11,11 @@ class Solver {
 public:
 	static const int
 	RK4 = (1 << 0);
+	struct Properties {
+		bool RK4 = false;
+		float G = 1e-4f;
+	};
+	
 public:
 	int size;
 	

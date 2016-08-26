@@ -8,7 +8,6 @@ build
 *.exe
 *.dll
 
-record*
-render*
-video*
+./record
+./video
 *.mp4
