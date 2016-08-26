@@ -166,7 +166,7 @@ public:
 		fflush(stdout);
 		
 		// unite
-		unite();
+		//unite();
 		
 		// solve
 		int mindepth = max_tree_depth;

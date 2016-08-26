@@ -51,7 +51,7 @@ void distrib_galaxy(const int size, ParticleCPU *parts, std::function<float()> r
 		p.pos = fvec3(x, y, z);
 		p.vel = 
 			0.1*fvec3(rand(), rand(), rand()) + 
-			0.7f*fvec3(-y, x, 0)*sqrt(l);
+			0.6f*fvec3(-y, x, 0)*sqrt(l);
 		
 		float _a = 3*a/_M_PI;
 		float _r = clamp(2 - fabs((_a > 3 ? _a - 6 : _a)));
@@ -105,13 +105,13 @@ void distrib_cube(const int size, ParticleCPU *parts, std::function<float()> ran
 int main(int argc, char *argv[]) {
 	Engine engine(800, 800);//, Engine::RECORD);
 	
-	const int size = 16*1024;
+	const int size = 8*1024;
 	
-	int features = 0; //Solver::RK4;
+	int features = Solver::RK4;
 	
 	//SolverCPU
-	//SolverGPU
-	SolverHybrid 
+	SolverGPU
+	//SolverHybrid 
 		solver(size, features);
 	
 	solver.dt = 2e-2;

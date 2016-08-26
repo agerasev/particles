@@ -34,7 +34,6 @@ libgl4u/c-includer/defs/opencl.h
 libgl4u/c-includer/defs/defs.glsl
 shaders/defs.glsl
 shaders/head.glsl
-source/solvercpu.hpp
 source/solvergpu.hpp
 source/particle.hpp
 source/glbank.hpp
